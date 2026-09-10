@@ -35,11 +35,27 @@ final class Json {
         }
     }
 
+    static <T> T read(InputStream in, Class<T> type) {
+        try {
+            return MAPPER.readValue(in, type);
+        } catch (IOException e) {
+            throw new FolderionException("Failed to read JSON stream", e);
+        }
+    }
+
     static JsonNode readTree(Path path) {
         try (InputStream in = Files.newInputStream(path)) {
             return MAPPER.readTree(in);
         } catch (IOException e) {
             throw new FolderionException("Failed to read JSON: " + path, e);
+        }
+    }
+
+    static JsonNode readTree(InputStream in) {
+        try {
+            return MAPPER.readTree(in);
+        } catch (IOException e) {
+            throw new FolderionException("Failed to read JSON stream", e);
         }
     }
 

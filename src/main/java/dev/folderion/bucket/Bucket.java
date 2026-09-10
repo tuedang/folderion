@@ -2,12 +2,22 @@ package dev.folderion.bucket;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.ocfl.api.OcflOption;
+import io.ocfl.api.OcflRepository;
+import io.ocfl.api.model.ObjectDetails;
+import io.ocfl.api.model.ObjectVersionId;
+import io.ocfl.api.model.OcflObjectVersion;
+import io.ocfl.api.model.OcflObjectVersionFile;
+import io.ocfl.api.model.VersionInfo;
+import io.ocfl.api.model.VersionNum;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,21 +25,35 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Open handle to a bucket directory (one record type).
+ * Open handle to a Folderion bucket backed by an {@link OcflRepository}.
+ *
+ * <p>Each record id is one OCFL object. Commits that change content/media create a new immutable
+ * OCFL version ({@code v1}, {@code v2}, …). Identical payloads return {@link CommitResult.Status#UNCHANGED}
+ * without a new version.
  */
-public final class Bucket {
-
-    private static final Pattern HISTORY_DIR_NAME = Pattern.compile("^.+_v[1-9][0-9]*$");
+public final class Bucket implements AutoCloseable {
 
     private final Path root;
+    private final Path ocflRoot;
+    private final Path workDir;
     private final BucketConfig config;
     private final RecordLayoutSchema schema;
+    private final OcflRepository repository;
     private final Pattern idPattern;
 
-    Bucket(Path root, BucketConfig config, RecordLayoutSchema schema) {
+    Bucket(
+            Path root,
+            Path ocflRoot,
+            Path workDir,
+            BucketConfig config,
+            RecordLayoutSchema schema,
+            OcflRepository repository) {
         this.root = root.toAbsolutePath().normalize();
+        this.ocflRoot = ocflRoot.toAbsolutePath().normalize();
+        this.workDir = workDir.toAbsolutePath().normalize();
         this.config = config;
         this.schema = schema;
+        this.repository = repository;
         this.idPattern = config.getIdPattern() == null || config.getIdPattern().isBlank()
                 ? null
                 : Pattern.compile(config.getIdPattern());
@@ -37,6 +61,15 @@ public final class Bucket {
 
     public Path root() {
         return root;
+    }
+
+    /** OCFL storage root — same as {@link #root()} for this layout (data lives under the bucket). */
+    public Path ocflRoot() {
+        return ocflRoot;
+    }
+
+    public Path workDir() {
+        return workDir;
     }
 
     public BucketConfig config() {
@@ -47,62 +80,90 @@ public final class Bucket {
         return schema;
     }
 
-    public Path recordsDir() {
-        return root.resolve(config.getRecordsDir());
-    }
-
-    public Path recordDir(String id) {
-        validateId(id);
-        return recordsDir().resolve(id);
+    public OcflRepository repository() {
+        return repository;
     }
 
     /**
-     * Lean history nested dir: {@code records/{id}/{id}_v{n}/} ({@code n} starts at 1 = newest archive).
+     * OCFL object root under the bucket, e.g. {@code buckets/centris/centris-27481461/}.
      */
-    public Path historyVersionDir(String id, int version) {
+    public Path objectDir(String id) {
         validateId(id);
-        if (version < 1) {
-            throw new FolderionException("History version must be >= 1: " + version);
+        return root.resolve(objectId(id));
+    }
+
+    /**
+     * On-disk directory of HEAD logical files: {@code {bucket}/{bucketId}-{id}/vN/content/}.
+     */
+    public Path recordDir(String id) {
+        return headContentDir(id);
+    }
+
+    public Path headContentDir(String id) {
+        validateId(id);
+        if (!repository.containsObject(objectId(id))) {
+            throw new FolderionException("Unknown record: " + id);
         }
-        return recordDir(id).resolve(versionFolderName(id, version));
+        VersionNum head = repository.describeObject(objectId(id)).getHeadVersionNum();
+        return objectDir(id).resolve(head.toString()).resolve("content");
     }
 
     public boolean exists(String id) {
-        return Files.isDirectory(recordDir(id));
+        validateId(id);
+        return repository.containsObject(objectId(id));
     }
 
     public Optional<JsonNode> readRecord(String id) {
-        Path file = recordDir(id).resolve(schema.path("record"));
-        if (!Files.isRegularFile(file)) {
-            return Optional.empty();
-        }
-        return Optional.of(Json.readTree(file));
+        return readLogicalJson(id, null, schema.path("record"));
     }
 
     /**
-     * Existing lean history version numbers (ascending). {@code 1} = newest archive.
+     * OCFL version numbers present for the object (ascending, {@code 1} = oldest).
      */
-    public List<Integer> listHistoryVersions(String id) {
+    public List<Integer> listVersions(String id) {
         validateId(id);
-        int max = schema.getMaxHistoryVersions();
-        if (max < 1) {
+        if (!repository.containsObject(objectId(id))) {
             return List.of();
         }
-        List<Integer> versions = new ArrayList<>();
-        for (int v = 1; v <= max; v++) {
-            if (Files.isDirectory(historyVersionDir(id, v))) {
-                versions.add(v);
-            }
-        }
-        return List.copyOf(versions);
+        ObjectDetails details = repository.describeObject(objectId(id));
+        return details.getVersionMap().keySet().stream()
+                .sorted(Comparator.naturalOrder())
+                .map(v -> Math.toIntExact(v.getVersionNum()))
+                .toList();
     }
 
-    public Optional<JsonNode> readHistoryRecord(String id, int version) {
-        Path file = historyVersionDir(id, version).resolve(schema.path("record"));
-        if (!Files.isRegularFile(file)) {
-            return Optional.empty();
+    /** @deprecated use {@link #listVersions(String)} */
+    @Deprecated
+    public List<Integer> listHistoryVersions(String id) {
+        return listVersions(id);
+    }
+
+    public Optional<JsonNode> readVersionRecord(String id, int version) {
+        validateId(id);
+        if (version < 1) {
+            throw new FolderionException("Version must be >= 1: " + version);
         }
-        return Optional.of(Json.readTree(file));
+        return readLogicalJson(id, VersionNum.fromInt(version), schema.path("record"));
+    }
+
+    /** @deprecated use {@link #readVersionRecord(String, int)} */
+    @Deprecated
+    public Optional<JsonNode> readHistoryRecord(String id, int version) {
+        return readVersionRecord(id, version);
+    }
+
+    public Optional<String> readLogicalText(String id, String logicalPath) {
+        return readLogicalStream(id, null, logicalPath).map(in -> {
+            try (in) {
+                return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new FolderionException("Failed to read " + logicalPath + " for " + id, e);
+            }
+        });
+    }
+
+    public Optional<JsonNode> readLogicalJson(String id, String logicalPath) {
+        return readLogicalJson(id, null, logicalPath);
     }
 
     public CommitResult commit(WritePlan plan) {
@@ -117,116 +178,97 @@ public final class Bucket {
         List<String> mediaDigests = collectMediaDigests(plan);
         String mediaFp = mediaDigests.isEmpty() ? null : Fingerprints.mediaFingerprint(mediaDigests);
 
-        Path finalDir = recordDir(plan.id());
-        boolean existed = Files.isDirectory(finalDir);
+        String oid = objectId(plan.id());
+        boolean existed = repository.containsObject(oid);
 
         if (existed) {
-            Optional<RecordIntegrity> previous = readIntegrity(finalDir);
+            Optional<RecordIntegrity> previous = readIntegrityFromHead(plan.id());
             if (previous.isPresent()
                     && contentFp.equals(previous.get().getContentSha256())
                     && Objects.equals(mediaFp, previous.get().getMediaSha256())) {
-                touchLastSeen(finalDir);
-                return new CommitResult(CommitResult.Status.UNCHANGED, finalDir, contentFp, mediaFp);
+                return new CommitResult(CommitResult.Status.UNCHANGED, headContentDir(plan.id()), contentFp, mediaFp,
+                        headVersionNum(plan.id()));
             }
         }
 
         record.set("integrity", Json.valueToTree(new RecordIntegrity(contentFp, mediaFp)));
 
-        Path staging = root.resolve(".staging").resolve(plan.id() + "-" + System.nanoTime());
+        Path staging = workDir.resolve("folderion-stage").resolve(plan.id() + "-" + System.nanoTime());
+        ObjectVersionId writtenId;
         try {
             Files.createDirectories(staging);
             writeRecordTree(staging, plan, record);
-            if (existed) {
-                preserveAndMaybeRotateNestedHistory(plan.id(), finalDir, staging, record);
+            VersionInfo info = new VersionInfo()
+                    .setMessage(existed ? "folderion update" : "folderion create")
+                    .setCreated(java.time.OffsetDateTime.now());
+
+            if (!existed) {
+                writtenId = repository.putObject(ObjectVersionId.head(oid), staging, info);
+            } else {
+                writtenId = repository.updateObject(ObjectVersionId.head(oid), info, updater -> {
+                    updater.clearVersionState();
+                    updater.addPath(staging, OcflOption.OVERWRITE);
+                });
             }
-            Io.moveReplace(staging, finalDir);
         } catch (RuntimeException e) {
             Io.deleteRecursively(staging);
             throw e;
-        } catch (IOException e) {
+        } catch (Exception e) {
             Io.deleteRecursively(staging);
-            throw new FolderionException("Failed to stage record " + plan.id(), e);
+            throw new FolderionException("Failed to commit OCFL object " + oid, e);
+        } finally {
+            Io.deleteRecursively(staging);
         }
 
+        int version = writtenId.getVersionNum() != null
+                ? Math.toIntExact(writtenId.getVersionNum().getVersionNum())
+                : headVersionNum(plan.id());
         return new CommitResult(
                 existed ? CommitResult.Status.UPDATED : CommitResult.Status.CREATED,
-                finalDir,
+                headContentDir(plan.id()),
                 contentFp,
-                mediaFp);
-    }
-
-    /**
-     * Copy nested {@code {id}_vN} into staging so HEAD replace does not wipe them; when
-     * {@code historyFields} change, rotate and archive prior HEAD {@code record.json} into
-     * {@code {id}_v1} (lean — no media). Drops versions beyond max.
-     */
-    private void preserveAndMaybeRotateNestedHistory(
-            String id, Path finalDir, Path staging, ObjectNode newRecord) {
-        int max = schema.getMaxHistoryVersions();
-        if (max < 1) {
-            return;
-        }
-
-        List<String> historyFields = schema.getHistoryFields();
-        Path oldRecordFile = finalDir.resolve(schema.path("record"));
-        boolean shouldArchive = false;
-        if (historyFields != null && !historyFields.isEmpty() && Files.isRegularFile(oldRecordFile)) {
-            JsonNode oldRecord = Json.readTree(oldRecordFile);
-            String oldHistoryFp = Fingerprints.contentFingerprint(oldRecord, historyFields);
-            String newHistoryFp = Fingerprints.contentFingerprint(newRecord, historyFields);
-            shouldArchive = !oldHistoryFp.equals(newHistoryFp);
-        }
-
-        for (int v = 1; v <= max; v++) {
-            Path from = finalDir.resolve(versionFolderName(id, v));
-            if (Files.isDirectory(from)) {
-                Io.copyRecursively(from, staging.resolve(versionFolderName(id, v)));
-            }
-        }
-
-        if (!shouldArchive) {
-            return;
-        }
-
-        Path drop = staging.resolve(versionFolderName(id, max));
-        if (Files.exists(drop)) {
-            Io.deleteRecursively(drop);
-        }
-        for (int v = max - 1; v >= 1; v--) {
-            Path from = staging.resolve(versionFolderName(id, v));
-            if (Files.isDirectory(from)) {
-                Io.moveReplace(from, staging.resolve(versionFolderName(id, v + 1)));
-            }
-        }
-
-        Path archiveFile = staging.resolve(versionFolderName(id, 1)).resolve(schema.path("record"));
-        try {
-            Files.createDirectories(archiveFile.getParent());
-            Files.copy(oldRecordFile, archiveFile);
-        } catch (IOException e) {
-            throw new FolderionException("Failed to archive lean history " + id + "_v1", e);
-        }
-    }
-
-    static String versionFolderName(String id, int version) {
-        return id + "_v" + version;
+                mediaFp,
+                version);
     }
 
     public Stream<String> listRecordIds() {
-        Path dir = recordsDir();
-        if (!Files.isDirectory(dir)) {
-            return Stream.empty();
+        String prefix = objectIdPrefix();
+        return repository.listObjectIds()
+                .filter(oid -> oid.startsWith(prefix))
+                .map(oid -> oid.substring(prefix.length()))
+                .sorted();
+    }
+
+    @Override
+    public void close() {
+        repository.close();
+    }
+
+    private Optional<JsonNode> readLogicalJson(String id, VersionNum version, String logicalPath) {
+        return readLogicalStream(id, version, logicalPath).map(in -> {
+            try (in) {
+                return Json.readTree(in);
+            } catch (IOException e) {
+                throw new FolderionException("Failed to read JSON " + logicalPath + " for " + id, e);
+            }
+        });
+    }
+
+    private Optional<InputStream> readLogicalStream(String id, VersionNum version, String logicalPath) {
+        validateId(id);
+        String oid = objectId(id);
+        if (!repository.containsObject(oid)) {
+            return Optional.empty();
         }
-        try {
-            return Files.list(dir)
-                    .filter(Files::isDirectory)
-                    .map(p -> p.getFileName().toString())
-                    .filter(name -> !name.startsWith("."))
-                    .filter(name -> !HISTORY_DIR_NAME.matcher(name).matches())
-                    .sorted();
-        } catch (IOException e) {
-            throw new FolderionException("Failed to list records in " + dir, e);
+        ObjectVersionId versionId = version == null
+                ? ObjectVersionId.head(oid)
+                : ObjectVersionId.version(oid, version);
+        OcflObjectVersion objectVersion = repository.getObject(versionId);
+        if (!objectVersion.containsFile(logicalPath)) {
+            return Optional.empty();
         }
+        OcflObjectVersionFile file = objectVersion.getFile(logicalPath);
+        return Optional.of(file.getStream());
     }
 
     private void writeRecordTree(Path staging, WritePlan plan, ObjectNode record) {
@@ -335,33 +377,37 @@ public final class Bucket {
         if (id == null || id.isBlank() || id.contains("/") || id.contains("\\") || id.contains("..")) {
             throw new FolderionException("Invalid record id: " + id);
         }
-        if (HISTORY_DIR_NAME.matcher(id).matches()) {
-            throw new FolderionException("Record id must not use history suffix _vN: " + id);
-        }
         if (idPattern != null && !idPattern.matcher(id).matches()) {
             throw new FolderionException("Record id does not match pattern " + idPattern + ": " + id);
         }
+    }
+
+    /** OCFL object id: {@code {bucketId}-{recordId}} so multiple buckets can share one ocfl root. */
+    private String objectId(String id) {
+        return objectIdPrefix() + id;
+    }
+
+    private String objectIdPrefix() {
+        return config.getBucketId() + "-";
     }
 
     private Optional<MediaSlot> findUrlSlot() {
         return schema.getMedia().stream().filter(m -> m.getKind() == MediaKind.URL_FILE).findFirst();
     }
 
-    private Optional<RecordIntegrity> readIntegrity(Path recordDir) {
-        Path recordFile = recordDir.resolve(schema.path("record"));
-        if (!Files.isRegularFile(recordFile)) {
-            return Optional.empty();
-        }
-        JsonNode tree = Json.readTree(recordFile);
-        JsonNode integrity = tree.get("integrity");
-        if (integrity == null || integrity.isNull()) {
-            return Optional.empty();
-        }
-        return Optional.of(Json.mapper().convertValue(integrity, RecordIntegrity.class));
+    private Optional<RecordIntegrity> readIntegrityFromHead(String id) {
+        return readRecord(id).flatMap(tree -> {
+            JsonNode integrity = tree.get("integrity");
+            if (integrity == null || integrity.isNull()) {
+                return Optional.empty();
+            }
+            return Optional.of(Json.mapper().convertValue(integrity, RecordIntegrity.class));
+        });
     }
 
-    private void touchLastSeen(Path recordDir) {
-        Io.writeText(recordDir.resolve(".state/last_seen_at"), Instant.now().toString() + "\n");
+    private int headVersionNum(String id) {
+        ObjectDetails details = repository.describeObject(objectId(id));
+        return Math.toIntExact(details.getHeadVersionNum().getVersionNum());
     }
 
     private static ObjectNode objectChild(ObjectNode parent, String field) {

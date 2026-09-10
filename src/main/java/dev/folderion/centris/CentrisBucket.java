@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * Factory for the Centris listing bucket contract ({@code centris.listing} v1.0).
+ * Factory for the Centris listing bucket contract ({@code centris.listing} v1.0) on OCFL.
  */
 public final class CentrisBucket {
 
@@ -55,9 +55,6 @@ public final class CentrisBucket {
                 .fingerprintFields(
                         "title", "address", "price", "features", "financial",
                         "description", "brokers", "open_houses")
-                // Lean history: nested {id}/{id}_v1.._vN (HEAD = parent folder); keep last 3.
-                .historyFields("price")
-                .maxHistoryVersions(3)
                 .build();
     }
 }

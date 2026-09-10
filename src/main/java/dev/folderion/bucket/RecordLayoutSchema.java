@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Describes how records under a bucket are laid out on disk.
+ * Describes how records under a bucket are laid out as OCFL logical paths.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -22,17 +22,6 @@ public final class RecordLayoutSchema {
     private List<MediaSlot> media = new ArrayList<>();
     /** JSON field names included in content fingerprint (top-level or dotted object paths). */
     private List<String> fingerprintFields = new ArrayList<>();
-    /**
-     * Fields that trigger lean history archive when they change (subset of business payload).
-     * Empty = no history. Examples: {@code price}, {@code open_houses}.
-     */
-    private List<String> historyFields = new ArrayList<>();
-    /**
-     * Max nested lean versions under the record folder ({@code {id}/{id}_v1} … {@code {id}_vN}).
-     * {@code 0} disables history. {@code _v1} is the newest archive; higher N is older.
-     * Excess versions are dropped on rotate.
-     */
-    private int maxHistoryVersions = 0;
 
     public RecordLayoutSchema() {
     }
@@ -81,22 +70,6 @@ public final class RecordLayoutSchema {
         this.fingerprintFields = fingerprintFields != null ? new ArrayList<>(fingerprintFields) : new ArrayList<>();
     }
 
-    public List<String> getHistoryFields() {
-        return historyFields;
-    }
-
-    public void setHistoryFields(List<String> historyFields) {
-        this.historyFields = historyFields != null ? new ArrayList<>(historyFields) : new ArrayList<>();
-    }
-
-    public int getMaxHistoryVersions() {
-        return maxHistoryVersions;
-    }
-
-    public void setMaxHistoryVersions(int maxHistoryVersions) {
-        this.maxHistoryVersions = maxHistoryVersions;
-    }
-
     public String path(String key) {
         String value = paths.get(key);
         if (value == null || value.isBlank()) {
@@ -126,12 +99,6 @@ public final class RecordLayoutSchema {
         for (MediaSlot slot : media) {
             slot.validate();
         }
-        if (maxHistoryVersions < 0) {
-            throw new FolderionException("maxHistoryVersions must be >= 0");
-        }
-        if (maxHistoryVersions > 0 && (historyFields == null || historyFields.isEmpty())) {
-            throw new FolderionException("maxHistoryVersions > 0 requires historyFields");
-        }
     }
 
     public static final class Builder {
@@ -159,16 +126,6 @@ public final class RecordLayoutSchema {
 
         public Builder fingerprintFields(String... fields) {
             schema.fingerprintFields.addAll(List.of(fields));
-            return this;
-        }
-
-        public Builder historyFields(String... fields) {
-            schema.historyFields.addAll(List.of(fields));
-            return this;
-        }
-
-        public Builder maxHistoryVersions(int maxHistoryVersions) {
-            schema.maxHistoryVersions = maxHistoryVersions;
             return this;
         }
 

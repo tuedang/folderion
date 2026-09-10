@@ -12,6 +12,7 @@ out/
 bin/
 *.log
 .DS_Store
+*-work/
 
 # Compiled / packaged
 *.class

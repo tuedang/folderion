@@ -10,7 +10,6 @@ import dev.folderion.bucket.ImageManifest;
 import dev.folderion.bucket.MediaSlot;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Reads Centris listing records from a bucket (typed DTO + local image paths).
+ * Reads Centris listing records from an OCFL-backed bucket.
  */
 public final class CentrisReader {
 
@@ -47,26 +46,18 @@ public final class CentrisReader {
     }
 
     /**
-     * Lean price timeline: archived versions oldest→newest ({@code _vN}…{@code _v1}), then HEAD ({@code current}).
-     * {@code _v1} is the newest archive.
+     * Price at every OCFL version, oldest → newest ({@code v1}…{@code vN}).
      */
     public List<PriceHistoryEntry> priceHistory(String id) {
         List<PriceHistoryEntry> entries = new ArrayList<>();
-        List<Integer> versions = bucket.listHistoryVersions(id);
-        for (int i = versions.size() - 1; i >= 0; i--) {
-            int version = versions.get(i);
-            bucket.readHistoryRecord(id, version).ifPresent(node -> {
+        for (int version : bucket.listVersions(id)) {
+            bucket.readVersionRecord(id, version).ifPresent(node -> {
                 CentrisListing.Price price = MAPPER.convertValue(node.get("price"), CentrisListing.Price.class);
                 if (price != null) {
                     entries.add(new PriceHistoryEntry("v" + version, price));
                 }
             });
         }
-        read(id).ifPresent(listing -> {
-            if (listing.getPrice() != null) {
-                entries.add(new PriceHistoryEntry("current", listing.getPrice()));
-            }
-        });
         return List.copyOf(entries);
     }
 
@@ -74,27 +65,11 @@ public final class CentrisReader {
     }
 
     public Optional<String> readme(String id) {
-        Path file = bucket.recordDir(id).resolve(bucket.schema().path("readme"));
-        if (!Files.isRegularFile(file)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(Files.readString(file));
-        } catch (IOException e) {
-            throw new FolderionException("Failed to read README: " + file, e);
-        }
+        return bucket.readLogicalText(id, bucket.schema().path("readme")).map(String::trim);
     }
 
     public Optional<String> sourceUrl(String id) {
-        Path file = bucket.recordDir(id).resolve(bucket.schema().path("source_url"));
-        if (!Files.isRegularFile(file)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(Files.readString(file).trim());
-        } catch (IOException e) {
-            throw new FolderionException("Failed to read source URL: " + file, e);
-        }
+        return bucket.readLogicalText(id, bucket.schema().path("source_url")).map(String::trim);
     }
 
     public Optional<ImageManifest> imageManifest(String id) {
@@ -102,19 +77,12 @@ public final class CentrisReader {
         if (slot.getManifest() == null) {
             return Optional.empty();
         }
-        Path file = bucket.recordDir(id).resolve(slot.getManifest());
-        if (!Files.isRegularFile(file)) {
-            return Optional.empty();
-        }
-        try (InputStream in = Files.newInputStream(file)) {
-            return Optional.of(MAPPER.readValue(in, ImageManifest.class));
-        } catch (IOException e) {
-            throw new FolderionException("Failed to read image manifest: " + file, e);
-        }
+        return bucket.readLogicalJson(id, slot.getManifest())
+                .map(node -> MAPPER.convertValue(node, ImageManifest.class));
     }
 
     /**
-     * Absolute paths to image files under the record's image set directory (ordered by manifest when present).
+     * Paths to HEAD image files under {@code {id}/vN/content/media/images/}.
      */
     public List<Path> imagePaths(String id) {
         MediaSlot slot = bucket.schema().requireMedia(CentrisBucket.IMAGES_SLOT);
