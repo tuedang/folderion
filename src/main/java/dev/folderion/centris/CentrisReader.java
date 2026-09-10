@@ -45,6 +45,20 @@ public final class CentrisReader {
         return Optional.of(listing);
     }
 
+    /** Record ids present in the bucket (sorted). */
+    public List<String> listIds() {
+        return bucket.listRecordIds().toList();
+    }
+
+    /** HEAD listing for every record id ({@link #listIds()} order). */
+    public List<CentrisListing> listAll() {
+        List<CentrisListing> listings = new ArrayList<>();
+        for (String id : listIds()) {
+            listings.add(read(id).orElseThrow(() -> new FolderionException("Missing listing for id: " + id)));
+        }
+        return listings;
+    }
+
     /**
      * Price at every OCFL version, oldest → newest ({@code v1}…{@code vN}).
      */
