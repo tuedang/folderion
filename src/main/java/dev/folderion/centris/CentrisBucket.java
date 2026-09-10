@@ -1,18 +1,20 @@
 package dev.folderion.centris;
 
-import dev.folderion.bucket.Bucket;
-import dev.folderion.bucket.BucketConfig;
-import dev.folderion.bucket.Folderion;
-import dev.folderion.bucket.MediaSlot;
-import dev.folderion.bucket.RecordLayoutSchema;
-
-import java.nio.file.Path;
-import java.util.Objects;
+import dev.folderion.core.Bucket;
+import dev.folderion.core.BucketConfig;
+import dev.folderion.core.BucketType;
+import dev.folderion.core.MediaSlot;
+import dev.folderion.core.RecordLayoutSchema;
 
 /**
- * Factory for the Centris listing bucket contract ({@code centris.listing} v1.0) on OCFL.
+ * Centris listing bucket contract ({@code centris.listing} v1.0) on OCFL.
+ *
+ * <p>Use {@link #INSTANCE} (or the static helpers) to {@link #init(Path)} / {@link #open(Path)} a
+ * shared {@link Bucket}.
  */
-public final class CentrisBucket {
+public final class CentrisBucket implements BucketType {
+
+    public static final CentrisBucket INSTANCE = new CentrisBucket();
 
     public static final String BUCKET_ID = "centris";
     public static final String RECORD_TYPE = "centris.listing";
@@ -22,17 +24,13 @@ public final class CentrisBucket {
     private CentrisBucket() {
     }
 
-    public static Bucket init(Path bucketRoot) {
-        Objects.requireNonNull(bucketRoot, "bucketRoot");
-        return Folderion.create().init(bucketRoot, config(), schema());
+    @Override
+    public String bucketId() {
+        return BUCKET_ID;
     }
 
-    public static Bucket open(Path bucketRoot) {
-        Objects.requireNonNull(bucketRoot, "bucketRoot");
-        return Folderion.create().open(bucketRoot);
-    }
-
-    public static BucketConfig config() {
+    @Override
+    public BucketConfig config() {
         BucketConfig config = new BucketConfig(
                 BUCKET_ID,
                 RECORD_TYPE,
@@ -43,15 +41,16 @@ public final class CentrisBucket {
         return config;
     }
 
-    public static RecordLayoutSchema schema() {
+    @Override
+    public RecordLayoutSchema schema() {
         return RecordLayoutSchema.builder()
                 .recordType(RECORD_TYPE)
                 .layoutVersion(LAYOUT_VERSION)
                 .path("record", "record.json")
-                .path("readme", "README.md")
-                .path("source_url", "source/original.url")
+                .path("readme", "recordme.md")
+                .path("source_url", "original.url")
                 .media(MediaSlot.imageSet(IMAGES_SLOT, "media/images", "media/images/manifest.json"))
-                .media(MediaSlot.urlFile("source_url", "source/original.url"))
+                .media(MediaSlot.urlFile("source_url", "original.url"))
                 .fingerprintFields(
                         "title", "address", "price", "features", "financial",
                         "description", "brokers", "open_houses")

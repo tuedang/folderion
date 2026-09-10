@@ -1,4 +1,4 @@
-package dev.folderion.bucket;
+package dev.folderion.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

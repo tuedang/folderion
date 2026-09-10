@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import dev.folderion.bucket.Bucket;
-import dev.folderion.bucket.FolderionException;
-import dev.folderion.bucket.ImageManifest;
-import dev.folderion.bucket.MediaSlot;
+import dev.folderion.core.Bucket;
+import dev.folderion.core.FolderionException;
+import dev.folderion.core.ImageManifest;
+import dev.folderion.core.MediaSlot;
 
 import java.io.IOException;
 import java.nio.file.Files;

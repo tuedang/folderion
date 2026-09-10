@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Generates the listing README.md from a {@link CentrisListing}.
+ * Generates the listing {@code recordme.md} from a {@link CentrisListing}.
  */
 final class CentrisReadme {
 

@@ -24,10 +24,13 @@ Spec markdown that ocfl-java copies into the storage root is deleted after init 
 ## Usage
 
 ```java
-try (Bucket bucket = CentrisBucket.init(Path.of("buckets/centris"))) {
+try (Bucket bucket = CentrisBucket.INSTANCE.init(Path.of("buckets/centris"))) {
     new CentrisWriter(bucket).write(listing, images);
 }
 ```
+
+Domain buckets implement `BucketType` (`config` + `schema`) and reuse core `Bucket`.
+`dev.folderion.core` is the shared OCFL layer; `dev.folderion.centris` is one record contract.
 
 ## Build
 

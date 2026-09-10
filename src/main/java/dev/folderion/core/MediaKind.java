@@ -1,4 +1,4 @@
-package dev.folderion.bucket;
+package dev.folderion.core;
 
 /**
  * Well-known media / document slots declared in a layout schema.

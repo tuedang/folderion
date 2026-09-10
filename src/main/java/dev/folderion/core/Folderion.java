@@ -1,4 +1,4 @@
-package dev.folderion.bucket;
+package dev.folderion.core;
 
 import io.ocfl.api.OcflRepository;
 import io.ocfl.core.OcflRepositoryBuilder;
@@ -44,6 +44,12 @@ public final class Folderion {
     public static Path workDirFor(Path bucketRoot) {
         Path root = bucketRoot.toAbsolutePath().normalize();
         return root.resolveSibling(root.getFileName().toString() + "-work");
+    }
+
+    /** Create a new bucket from a {@link BucketType} contract. */
+    public Bucket init(Path bucketRoot, BucketType type) {
+        Objects.requireNonNull(type, "type");
+        return init(bucketRoot, type.config(), type.schema());
     }
 
     /**

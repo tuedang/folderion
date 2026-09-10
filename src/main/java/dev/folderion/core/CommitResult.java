@@ -1,4 +1,4 @@
-package dev.folderion.bucket;
+package dev.folderion.core;
 
 import java.nio.file.Path;
 

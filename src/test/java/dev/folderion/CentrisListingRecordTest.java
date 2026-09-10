@@ -2,9 +2,9 @@ package dev.folderion;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.folderion.bucket.Bucket;
-import dev.folderion.bucket.CommitResult;
-import dev.folderion.bucket.MediaBlob;
+import dev.folderion.core.Bucket;
+import dev.folderion.core.CommitResult;
+import dev.folderion.core.MediaBlob;
 import dev.folderion.centris.CentrisBucket;
 import dev.folderion.centris.CentrisImageRef;
 import dev.folderion.centris.CentrisListing;
@@ -60,7 +60,7 @@ class CentrisListingRecordTest {
 
     @Test
     void commitsCentrisListingFolderLayout() throws Exception {
-        try (Bucket bucket = CentrisBucket.init(tempDir.resolve("buckets/centris"))) {
+        try (Bucket bucket = CentrisBucket.INSTANCE.init(tempDir.resolve("buckets/centris"))) {
             CentrisListing listing = sampleListing();
             List<MediaBlob> images = List.of(
                     MediaBlob.image("01.jpg", jpegStub(1), "https://cdn.example/centris/27481461/01.jpg", 1),
@@ -72,51 +72,51 @@ class CentrisListingRecordTest {
 
             assertEquals(CommitResult.Status.CREATED, created.status());
             assertEquals(1, created.version());
-//            Path recordDir = created.recordDir();
-//            assertEquals(
-//                    tempDir.resolve("buckets/centris/centris-27481461/v1/content").toAbsolutePath().normalize(),
-//                    recordDir.toAbsolutePath().normalize());
-//            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris/centris-27481461")));
-//            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris/centris-27481461/v1")));
-//            assertTrue(Files.isRegularFile(tempDir.resolve("buckets/centris/bucket.json")));
-//            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris/schemas")));
-//            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris-work")));
-//            assertTrue(Files.isRegularFile(tempDir.resolve("buckets/centris/0=ocfl_1.1")));
-//            assertTrue(Files.isRegularFile(tempDir.resolve("buckets/centris/ocfl_layout.json")));
-//            assertFalse(Files.exists(tempDir.resolve("buckets/centris/ocfl_1.1.md")));
-//            assertFalse(Files.exists(tempDir.resolve("buckets/centris/0002-flat-direct-storage-layout.md")));
-//            assertFalse(Files.isDirectory(tempDir.resolve("buckets/centris-ocfl")));
-//
-//            assertTrue(Files.isRegularFile(recordDir.resolve("record.json")));
-//            assertTrue(Files.isRegularFile(recordDir.resolve("README.md")));
-//            assertTrue(Files.isRegularFile(recordDir.resolve("source/original.url")));
-//            assertTrue(Files.isRegularFile(recordDir.resolve("media/images/01.jpg")));
-//            assertTrue(Files.isRegularFile(recordDir.resolve("media/images/manifest.json")));
-//
-//            CentrisReader reader = new CentrisReader(bucket);
-//            assertEquals(SOURCE_URL, reader.sourceUrl(CENTRIS_NO).orElseThrow());
-//
-//            CentrisListing loaded = reader.read(CENTRIS_NO).orElseThrow();
-//            assertEquals(CENTRIS_NO, loaded.getId());
-//            assertEquals(688800, loaded.getPrice().getAmount());
-//            assertEquals(3, loaded.imageRefs().size());
-//
-//            JsonNode record = new ObjectMapper().readTree(recordDir.resolve("record.json").toFile());
-//            assertEquals("centris.listing", record.get("record_type").asText());
-//            assertTrue(record.has("integrity"));
-//
-//            assertEquals(3, reader.imageManifest(CENTRIS_NO).orElseThrow().getCount());
-//            assertEquals(3, reader.imagePaths(CENTRIS_NO).size());
-//
-//            String readme = reader.readme(CENTRIS_NO).orElseThrow();
-//            assertTrue(readme.contains("27481461"));
-//            assertTrue(readme.contains("$688,800"));
+            Path recordDir = created.recordDir();
+            assertEquals(
+                    tempDir.resolve("buckets/centris/centris-27481461/v1/content").toAbsolutePath().normalize(),
+                    recordDir.toAbsolutePath().normalize());
+            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris/centris-27481461")));
+            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris/centris-27481461/v1")));
+            assertTrue(Files.isRegularFile(tempDir.resolve("buckets/centris/bucket.json")));
+            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris/schemas")));
+            assertTrue(Files.isDirectory(tempDir.resolve("buckets/centris-work")));
+            assertTrue(Files.isRegularFile(tempDir.resolve("buckets/centris/0=ocfl_1.1")));
+            assertTrue(Files.isRegularFile(tempDir.resolve("buckets/centris/ocfl_layout.json")));
+            assertFalse(Files.exists(tempDir.resolve("buckets/centris/ocfl_1.1.md")));
+            assertFalse(Files.exists(tempDir.resolve("buckets/centris/0002-flat-direct-storage-layout.md")));
+            assertFalse(Files.isDirectory(tempDir.resolve("buckets/centris-ocfl")));
+
+            assertTrue(Files.isRegularFile(recordDir.resolve("record.json")));
+            assertTrue(Files.isRegularFile(recordDir.resolve("recordme.md")));
+            assertTrue(Files.isRegularFile(recordDir.resolve("original.url")));
+            assertTrue(Files.isRegularFile(recordDir.resolve("media/images/01.jpg")));
+            assertTrue(Files.isRegularFile(recordDir.resolve("media/images/manifest.json")));
+
+            CentrisReader reader = new CentrisReader(bucket);
+            assertEquals(SOURCE_URL, reader.sourceUrl(CENTRIS_NO).orElseThrow());
+
+            CentrisListing loaded = reader.read(CENTRIS_NO).orElseThrow();
+            assertEquals(CENTRIS_NO, loaded.getId());
+            assertEquals(688800, loaded.getPrice().getAmount());
+            assertEquals(3, loaded.imageRefs().size());
+
+            JsonNode record = new ObjectMapper().readTree(recordDir.resolve("record.json").toFile());
+            assertEquals("centris.listing", record.get("record_type").asText());
+            assertTrue(record.has("integrity"));
+
+            assertEquals(3, reader.imageManifest(CENTRIS_NO).orElseThrow().getCount());
+            assertEquals(3, reader.imagePaths(CENTRIS_NO).size());
+
+            String readme = reader.readme(CENTRIS_NO).orElseThrow();
+            assertTrue(readme.contains("27481461"));
+            assertTrue(readme.contains("$688,800"));
         }
     }
 
     @Test
     void secondCommitWithSamePayloadIsUnchanged() {
-        try (Bucket bucket = CentrisBucket.init(tempDir.resolve("buckets/centris"))) {
+        try (Bucket bucket = CentrisBucket.INSTANCE.init(tempDir.resolve("buckets/centris"))) {
             CentrisWriter writer = new CentrisWriter(bucket);
             List<MediaBlob> images = sampleImages(2);
 
@@ -129,7 +129,7 @@ class CentrisListingRecordTest {
 
     @Test
     void priceChangeCreatesNewOcflVersion() {
-        try (Bucket bucket = CentrisBucket.init(tempDir.resolve("buckets/centris"))) {
+        try (Bucket bucket = CentrisBucket.INSTANCE.init(tempDir.resolve("buckets/centris"))) {
             CentrisWriter writer = new CentrisWriter(bucket);
             CentrisReader reader = new CentrisReader(bucket);
             List<MediaBlob> images = sampleImages(2);
@@ -159,7 +159,7 @@ class CentrisListingRecordTest {
 
     @Test
     void ocflKeepsFullVersionHistory() {
-        try (Bucket bucket = CentrisBucket.init(tempDir.resolve("buckets/centris"))) {
+        try (Bucket bucket = CentrisBucket.INSTANCE.init(tempDir.resolve("buckets/centris"))) {
             CentrisWriter writer = new CentrisWriter(bucket);
             List<MediaBlob> images = sampleImages(1);
 

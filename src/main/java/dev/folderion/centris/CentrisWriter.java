@@ -1,9 +1,9 @@
 package dev.folderion.centris;
 
-import dev.folderion.bucket.Bucket;
-import dev.folderion.bucket.CommitResult;
-import dev.folderion.bucket.MediaBlob;
-import dev.folderion.bucket.WritePlan;
+import dev.folderion.core.Bucket;
+import dev.folderion.core.CommitResult;
+import dev.folderion.core.MediaBlob;
+import dev.folderion.core.WritePlan;
 
 import java.util.List;
 import java.util.Objects;

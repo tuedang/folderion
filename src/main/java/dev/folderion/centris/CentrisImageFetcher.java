@@ -1,6 +1,6 @@
 package dev.folderion.centris;
 
-import dev.folderion.bucket.MediaBlob;
+import dev.folderion.core.MediaBlob;
 
 import java.io.IOException;
 import java.net.URI;

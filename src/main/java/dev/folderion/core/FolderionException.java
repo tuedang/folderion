@@ -1,4 +1,4 @@
-package dev.folderion.bucket;
+package dev.folderion.core;
 
 public final class FolderionException extends RuntimeException {
 

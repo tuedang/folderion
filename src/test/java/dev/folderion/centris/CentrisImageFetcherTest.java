@@ -1,7 +1,7 @@
 package dev.folderion.centris;
 
 import com.sun.net.httpserver.HttpServer;
-import dev.folderion.bucket.MediaBlob;
+import dev.folderion.core.MediaBlob;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

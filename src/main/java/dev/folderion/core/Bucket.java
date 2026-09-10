@@ -1,4 +1,4 @@
-package dev.folderion.bucket;
+package dev.folderion.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -274,14 +274,14 @@ public final class Bucket implements AutoCloseable {
     private void writeRecordTree(Path staging, WritePlan plan, ObjectNode record) {
         Json.write(staging.resolve(schema.path("record")), record);
 
-        String readmePath = schema.pathOrDefault("readme", "README.md");
+        String readmePath = schema.pathOrDefault("readme", "recordme.md");
         if (plan.readmeMarkdown() != null) {
             Io.writeText(staging.resolve(readmePath), plan.readmeMarkdown());
         }
 
         if (plan.sourceUrl() != null) {
             MediaSlot urlSlot = findUrlSlot().orElse(null);
-            String urlPath = urlSlot != null ? urlSlot.getPath() : schema.pathOrDefault("source_url", "source/original.url");
+            String urlPath = urlSlot != null ? urlSlot.getPath() : schema.pathOrDefault("source_url", "original.url");
             Io.writeText(staging.resolve(urlPath), plan.sourceUrl().trim() + "\n");
         }
 
@@ -299,14 +299,6 @@ public final class Bucket implements AutoCloseable {
                 throw new FolderionException("Slot " + entry.getKey() + " has no path");
             }
             Io.writeBytes(staging.resolve(slot.getPath()), entry.getValue());
-        }
-
-        Io.writeText(staging.resolve(".state/last_seen_at"), Instant.now().toString() + "\n");
-        Io.writeText(staging.resolve(".state/content_fingerprint"),
-                record.get("integrity").get("contentSha256").asText() + "\n");
-        JsonNode mediaNode = record.get("integrity").get("mediaSha256");
-        if (mediaNode != null && !mediaNode.isNull()) {
-            Io.writeText(staging.resolve(".state/media_fingerprint"), mediaNode.asText() + "\n");
         }
     }
 
