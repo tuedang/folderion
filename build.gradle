@@ -19,6 +19,7 @@ dependencies {
     api 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
     api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
     api 'io.ocfl:ocfl-java-core:2.2.3'
+    api 'tech.tablesaw:tablesaw-core:0.44.4'
 
     compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'

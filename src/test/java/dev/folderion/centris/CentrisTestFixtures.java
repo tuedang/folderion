@@ -5,13 +5,13 @@ import java.util.List;
 /**
  * Offline Centris listing fixtures for tests (no live HTTP).
  */
-final class CentrisTestFixtures {
+public final class CentrisTestFixtures {
 
     private CentrisTestFixtures() {
     }
 
     /** Source: https://www.centris.ca/en/condominium-houses~for-sale~longueuil-saint-hubert/27481461 */
-    static CentrisListing listing27481461() {
+    public static CentrisListing listing27481461() {
         return CentrisListing.builder()
                 .id("27481461")
                 .title("Condominium house for sale")
@@ -80,7 +80,7 @@ final class CentrisTestFixtures {
     }
 
     /** Source: https://www.centris.ca/en/houses~for-sale~brossard/17351555 */
-    static CentrisListing listing17351555() {
+    public static CentrisListing listing17351555() {
         return CentrisListing.builder()
                 .id("17351555")
                 .title("House for sale")
