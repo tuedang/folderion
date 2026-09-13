@@ -1,36 +1,32 @@
-plugins {
-    id 'java-library'
-}
+subprojects {
+    group = 'dev.folderion'
+    version = '0.1.0-SNAPSHOT'
 
-group = 'dev.folderion'
-version = '0.1.0-SNAPSHOT'
+    repositories {
+        mavenCentral()
+    }
 
-repositories {
-    mavenCentral()
-}
+    plugins.withId('java') {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(21)
+            }
+        }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        tasks.named('test') {
+            useJUnitPlatform()
+        }
+    }
+
+    plugins.withId('java-library') {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(21)
+            }
+        }
+
+        tasks.named('test') {
+            useJUnitPlatform()
+        }
     }
 }
-
-dependencies {
-    api 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
-    api 'io.ocfl:ocfl-java-core:2.2.3'
-    api 'tech.tablesaw:tablesaw-core:0.44.4'
-
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
-    testCompileOnly 'org.projectlombok:lombok:1.18.36'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
-}
-

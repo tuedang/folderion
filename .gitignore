@@ -13,6 +13,7 @@ bin/
 *.log
 .DS_Store
 *-work/
+buckets/
 
 # Compiled / packaged
 *.class

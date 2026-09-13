@@ -1,0 +1,24 @@
+{
+  "name": "CentrisSearchResults",
+  "baseSelector": "div.property-thumbnail-item",
+  "fields": [
+    {
+      "name": "id",
+      "selector": "meta[itemprop=sku]",
+      "type": "attribute",
+      "attribute": "content"
+    },
+    {
+      "name": "url",
+      "selector": "a.property-thumbnail-summary-link",
+      "type": "attribute",
+      "attribute": "href"
+    },
+    {
+      "name": "title",
+      "selector": "meta[itemprop=name]",
+      "type": "attribute",
+      "attribute": "content"
+    }
+  ]
+}

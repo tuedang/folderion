@@ -1,0 +1,142 @@
+{
+  "name": "CentrisListing",
+  "baseSelector": "div.region-content",
+  "fields": [
+    {
+      "name": "id",
+      "selector": "#ListingId",
+      "type": "text"
+    },
+    {
+      "name": "centris_no",
+      "selector": "#ListingDisplayId",
+      "type": "text"
+    },
+    {
+      "name": "title",
+      "selector": "span[data-id=PageTitle]",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "address_raw",
+      "selector": "h2.property-summary-header__address",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "lat",
+      "selector": "#PropertyLat",
+      "type": "text"
+    },
+    {
+      "name": "lng",
+      "selector": "#PropertyLng",
+      "type": "text"
+    },
+    {
+      "name": "price_raw",
+      "selector": ".js-property-price-card .property-price-card__price-value",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "price_amount",
+      "selector": "#RawPrice",
+      "type": "text"
+    },
+    {
+      "name": "rooms",
+      "selector": "div.row.teaser .piece",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "bedrooms",
+      "selector": "div.row.teaser .cac",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "bathrooms",
+      "selector": "div.row.teaser .sdb",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "description",
+      "selector": "div.col-lg-12.description .description, div#property-description, div[data-id=DescriptionComplete]",
+      "type": "text",
+      "transform": "strip"
+    },
+    {
+      "name": "features",
+      "selector": "div.carac-container",
+      "type": "nested_list",
+      "fields": [
+        {
+          "name": "name",
+          "selector": ".carac-title",
+          "type": "text",
+          "transform": "strip"
+        },
+        {
+          "name": "value",
+          "selector": ".carac-value",
+          "type": "text",
+          "transform": "strip"
+        }
+      ]
+    },
+    {
+      "name": "financial_rows",
+      "selector": ".financial-details-table__row",
+      "type": "nested_list",
+      "fields": [
+        {
+          "name": "label",
+          "selector": ".financial-details-table__label",
+          "type": "text",
+          "transform": "strip"
+        },
+        {
+          "name": "value",
+          "selector": ".financial-details-table__value",
+          "type": "text",
+          "transform": "strip"
+        }
+      ]
+    },
+    {
+      "name": "brokers",
+      "selector": "div.realtor-card",
+      "type": "nested_list",
+      "fields": [
+        {
+          "name": "name",
+          "selector": ".realtor-name, a.card-link",
+          "type": "text",
+          "transform": "strip"
+        },
+        {
+          "name": "name_aria",
+          "selector": "a.card-link",
+          "type": "attribute",
+          "attribute": "aria-label"
+        },
+        {
+          "name": "role",
+          "selector": ".realtor-type",
+          "type": "text",
+          "transform": "strip"
+        },
+        {
+          "name": "agency",
+          "selector": "[itemprop=legalName]",
+          "type": "attribute",
+          "attribute": "content"
+        }
+      ]
+    }
+  ]
+}

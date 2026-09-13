@@ -33,10 +33,10 @@ class BucketQueryTest {
      */
     @Test
     void listsAllCentrisItems() {
-        try (Bucket bucket = CentrisBucket.INSTANCE.init(tempDir.resolve("buckets/query-test/centris-list"))) {
-            CentrisWriter writer = new CentrisWriter(bucket);
-            writer.write(CentrisTestFixtures.listing27481461(), List.of());
-            writer.write(CentrisTestFixtures.listing17351555(), List.of());
+        try (Bucket bucket = CentrisBucket.INSTANCE.open(tempDir.resolve("D:\\workspace\\folderion\\buckets\\centris"))) {
+//            CentrisWriter writer = new CentrisWriter(bucket);
+//            writer.write(CentrisTestFixtures.listing27481461(), List.of());
+//            writer.write(CentrisTestFixtures.listing17351555(), List.of());
 
             Table table = new BucketQuery(bucket, List.of(
                     "id",

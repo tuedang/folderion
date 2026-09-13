@@ -3,6 +3,13 @@
 Filesystem-first record storage for Java, backed by **[OCFL](https://ocfl.io/1.1/spec/)** via
 [`ocfl-java`](https://github.com/OCFL/ocfl-java) (flat layout).
 
+## Modules
+
+| Module | Role |
+|--------|------|
+| `folderion` | Core OCFL buckets + Centris listing contract (`CentrisBucket`, writer/reader) |
+| `folderion-crawler` | Crawl Centris via [Crawl4AI](https://docs.crawl4ai.com/) and persist into `CentrisBucket` |
+
 ## Layout
 
 ```text
@@ -19,9 +26,7 @@ buckets/
   centris-work/                       ← OCFL workspace (sibling)
 ```
 
-Spec markdown that ocfl-java copies into the storage root is deleted after init (not required to run).
-
-## Usage
+## Usage (library)
 
 ```java
 try (Bucket bucket = CentrisBucket.INSTANCE.init(Path.of("buckets/centris"))) {
@@ -29,11 +34,30 @@ try (Bucket bucket = CentrisBucket.INSTANCE.init(Path.of("buckets/centris"))) {
 }
 ```
 
-Domain buckets implement `BucketType` (`config` + `schema`) and reuse core `Bucket`.
-`dev.folderion.core` is the shared OCFL layer; `dev.folderion.centris` is one record contract.
+## Crawler
+
+`folderion-crawler` scrapes a Centris search URL, extracts each listing with a **classpath JSON schema**
+(`JsonCssExtractionStrategy`), then writes via `CentrisWriter` / `CentrisBucket`.
+
+Schemas (edit without recompiling Java field maps):
+
+- `folderion-crawler/src/main/resources/schemas/centris-search.extraction.json`
+- `folderion-crawler/src/main/resources/schemas/centris-listing.extraction.json`
+
+```bash
+./gradlew :folderion-crawler:run --args="--bucket buckets/centris --max-listings 5"
+```
+
+Defaults:
+
+- Crawl4AI: `http://192.168.68.57:11235` (`CRAWL4AI_URL` / `--crawl4ai-url`)
+- Bearer token: `mytoken` (`CRAWL4AI_TOKEN` / `--token`)
+- Search URL: the Centris houses query baked into `CentrisCrawlerApp`
 
 ## Build
 
 ```bash
 ./gradlew test
+./gradlew :folderion:test
+./gradlew :folderion-crawler:test
 ```
