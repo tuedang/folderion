@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,23 +38,39 @@ class BucketQueryTest {
             writer.write(CentrisTestFixtures.listing27481461(), List.of());
             writer.write(CentrisTestFixtures.listing17351555(), List.of());
 
-            FieldMapping mapping = FieldMapping.of(
-                    "id", "id",
-                    "title", "title",
-                    "features.year_built", "year",
-                    "price.amount", "price");
-
-            Table table = new BucketQuery(bucket, mapping).table();
+            Table table = new BucketQuery(bucket, List.of(
+                    "id",
+                    "title",
+                    "features.year_built as year",
+                    "price.amount")).table();
             System.out.println(table.print());
 
             assertEquals(2, table.rowCount());
+            assertEquals(List.of("id", "title", "year", "price.amount"), table.columnNames());
             assertEquals(List.of("17351555", "27481461"), table.stringColumn("id").asList());
             assertEquals("House for sale", table.stringColumn("title").get(0));
             assertEquals(2017L, table.longColumn("year").getLong(0));
-            assertEquals(750000L, table.longColumn("price").getLong(0));
+            assertEquals(750000L, table.longColumn("price.amount").getLong(0));
             assertEquals("Condominium house for sale", table.stringColumn("title").get(1));
-            assertEquals(688800L, table.longColumn("price").getLong(1));
+            assertEquals(688800L, table.longColumn("price.amount").getLong(1));
         }
+    }
+
+    @Test
+    void selectParsesAsAliasIntoMapping() {
+        FieldMapping mapping = FieldMapping.select(
+                "id",
+                "title",
+                "features.year_built as year",
+                "price.amount");
+
+        assertEquals(
+                Map.of(
+                        "id", "id",
+                        "title", "title",
+                        "features.year_built", "year",
+                        "price.amount", "price.amount"),
+                mapping.asMap());
     }
 
     @Test

@@ -2,8 +2,11 @@ package dev.folderion.query;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Optional map from JSON dotted paths to table column names.
@@ -11,8 +14,12 @@ import java.util.Objects;
  * <p>Example: {@code price.amount → price}, {@code address.city → city}.
  * When omitted, {@link BucketQuery} auto-flattens leaf fields and uses the dotted path as the
  * column name.
+ *
+ * <p>Also build from SQL-like selectors: {@code "features.year_built as year"}, {@code "price.amount"}.
  */
 public final class FieldMapping {
+
+    private static final Pattern AS_ALIAS = Pattern.compile("(?i)^(.+?)\\s+as\\s+(\\S+)$");
 
     private final Map<String, String> pathToColumn;
 
@@ -53,6 +60,33 @@ public final class FieldMapping {
         return builder.build();
     }
 
+    /**
+     * Parse field selectors into a mapping.
+     *
+     * <pre>{@code
+     * FieldMapping.select(List.of(
+     *         "id",
+     *         "title",
+     *         "features.year_built as year",
+     *         "price.amount"));
+     * }</pre>
+     *
+     * <p>Without {@code as}, the column name is the path itself.
+     */
+    public static FieldMapping select(List<String> selectors) {
+        Objects.requireNonNull(selectors, "selectors");
+        Builder builder = builder();
+        for (String selector : selectors) {
+            parseSelector(selector, builder);
+        }
+        return builder.build();
+    }
+
+    public static FieldMapping select(String... selectors) {
+        Objects.requireNonNull(selectors, "selectors");
+        return select(List.of(selectors));
+    }
+
     public static FieldMapping from(Map<String, String> pathToColumn) {
         Objects.requireNonNull(pathToColumn, "pathToColumn");
         Builder builder = builder();
@@ -71,6 +105,20 @@ public final class FieldMapping {
     /** Insertion-ordered path → column map. */
     public Map<String, String> asMap() {
         return pathToColumn;
+    }
+
+    private static void parseSelector(String selector, Builder builder) {
+        Objects.requireNonNull(selector, "selector");
+        String trimmed = selector.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("field selector must not be blank");
+        }
+        Matcher matcher = AS_ALIAS.matcher(trimmed);
+        if (matcher.matches()) {
+            builder.map(matcher.group(1).trim(), matcher.group(2).trim());
+            return;
+        }
+        builder.map(trimmed, trimmed);
     }
 
     public static final class Builder {

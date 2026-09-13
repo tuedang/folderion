@@ -14,16 +14,19 @@ import java.util.Objects;
  * Projects every record in a {@link Bucket} into a Tablesaw {@link Table} for display and later
  * filter / query.
  *
- * <p>{@link FieldMapping} is optional: when provided, only mapped paths become columns (renamed);
- * when omitted, leaf JSON fields are auto-flattened using dotted paths as column names.
+ * <p>Column selection is optional:
+ * <ul>
+ *   <li>none — auto-flatten leaf JSON fields (dotted path = column name)</li>
+ *   <li>{@link FieldMapping} — explicit path → column map</li>
+ *   <li>field selectors — e.g. {@code "features.year_built as year"}, {@code "price.amount"}</li>
+ * </ul>
  *
  * <pre>{@code
- * FieldMapping mapping = FieldMapping.of(
- *         "title", "title",
- *         "price.amount", "price",
- *         "address.city", "city",
- *         "features.yearBuilt", "year");
- * Table table = new BucketQuery(bucket, mapping).table();
+ * Table table = new BucketQuery(bucket, List.of(
+ *         "id",
+ *         "title",
+ *         "features.year_built as year",
+ *         "price.amount")).table();
  * table.print();
  * }</pre>
  */
@@ -33,12 +36,25 @@ public final class BucketQuery {
     private final FieldMapping mapping;
 
     public BucketQuery(Bucket bucket) {
-        this(bucket, null);
+        this(bucket, (FieldMapping) null);
     }
 
     public BucketQuery(Bucket bucket, FieldMapping mapping) {
         this.bucket = Objects.requireNonNull(bucket, "bucket");
         this.mapping = mapping == null || mapping.isEmpty() ? null : mapping;
+    }
+
+    /**
+     * Select columns via field selectors ({@code path} or {@code path as alias}).
+     * Parsed into a {@link FieldMapping} and delegated to {@link #BucketQuery(Bucket, FieldMapping)}.
+     */
+    public BucketQuery(Bucket bucket, List<String> fields) {
+        this(bucket, FieldMapping.select(Objects.requireNonNull(fields, "fields")));
+    }
+
+    /** Varargs form of {@link #BucketQuery(Bucket, List)}. */
+    public BucketQuery(Bucket bucket, String... fields) {
+        this(bucket, FieldMapping.select(Objects.requireNonNull(fields, "fields")));
     }
 
     /** Load all HEAD records into a table named after the bucket id. */
