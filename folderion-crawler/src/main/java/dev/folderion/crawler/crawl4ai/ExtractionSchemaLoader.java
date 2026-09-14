@@ -78,7 +78,7 @@ public final class ExtractionSchemaLoader {
 
         ObjectNode params = mapper.createObjectNode();
         params.put("stream", opts.stream());
-        params.put("cache_mode", opts.cacheMode());
+        params.set("cache_mode", wrapCacheMode(opts.cacheMode()));
         if (opts.waitFor() != null && !opts.waitFor().isBlank()) {
             params.put("wait_for", opts.waitFor());
         }
@@ -101,5 +101,14 @@ public final class ExtractionSchemaLoader {
         root.set("urls", urls);
         root.set("crawler_config", crawlerConfig);
         return root;
+    }
+
+    /** Docker API needs {@code {"type":"CacheMode","params":"enabled"}} — a raw string never becomes the Enum. */
+    ObjectNode wrapCacheMode(String cacheMode) {
+        String value = cacheMode == null || cacheMode.isBlank() ? "enabled" : cacheMode;
+        ObjectNode node = mapper.createObjectNode();
+        node.put("type", "CacheMode");
+        node.put("params", value);
+        return node;
     }
 }

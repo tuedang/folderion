@@ -61,6 +61,20 @@ class ExtractionSchemaLoaderTest {
         assertEquals("css:#divMainResult", params.path("wait_for").asText());
         assertEquals(20_000, params.path("wait_for_timeout").asInt());
         assertEquals(5.0, params.path("delay_before_return_html").asDouble());
-        assertEquals("enabled", params.path("cache_mode").asText());
+        assertEquals("CacheMode", params.path("cache_mode").path("type").asText());
+        assertEquals("enabled", params.path("cache_mode").path("params").asText());
+    }
+
+    @Test
+    void wrapsCacheModeAsTypedEnumForDockerDeserializer() {
+        JsonNode schema = loader.loadClasspath("schemas/centris-listing.extraction.json");
+        ObjectNode request = loader.buildCrawlRequest(
+                "https://www.centris.ca/en/houses~for-sale~brossard/17351555",
+                schema,
+                CrawlRunOptions.defaults());
+
+        JsonNode cacheMode = request.path("crawler_config").path("params").path("cache_mode");
+        assertEquals("CacheMode", cacheMode.path("type").asText());
+        assertEquals("enabled", cacheMode.path("params").asText());
     }
 }
