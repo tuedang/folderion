@@ -93,7 +93,7 @@ class BucketQueryTest {
             table = table.dropWhere(table.stringColumn("city").isIn("Beaconsfield", "Pointe-Claire", "Côte-Saint-Luc", "Dollard-des-Ormeaux",
                     "Boucherville", "Dorval"));
 
-            table = table.dropWhere(table.longColumn("fees").isGreaterThan(1000));
+            table = table.dropWhere(table.longColumn("fees").isGreaterThan(2100));
             table = table.dropWhere(table.stringColumn("address").containsString("Z, "));
 
             table = table.sortDescendingOn("year", "city", "bedrooms");
@@ -188,17 +188,27 @@ class BucketQueryTest {
         table.insertColumn(table.columnIndex("bedrooms") + 1, real);
     }
 
-    /** {@code price.offset = price.amount - price.city}. */
+    /**
+     * {@code price.offset = price.amount - price.city}, shown as {@code 55800 (12%)} where % is
+     * relative to {@code price.city}.
+     */
     private static void addPriceOffsetColumn(Table table) {
         LongColumn amount = table.longColumn("price.amount");
         LongColumn cityPrice = table.longColumn("price.city");
-        LongColumn offset = LongColumn.create("price.offset");
+        StringColumn offset = StringColumn.create("price.offset");
         for (int i = 0; i < table.rowCount(); i++) {
             if (amount.isMissing(i) || cityPrice.isMissing(i)) {
                 offset.appendMissing();
                 continue;
             }
-            offset.append(amount.getLong(i) - cityPrice.getLong(i));
+            long delta = amount.getLong(i) - cityPrice.getLong(i);
+            long city = cityPrice.getLong(i);
+            if (city == 0) {
+                offset.append(Long.toString(delta));
+            } else {
+                long percent = Math.round(delta * 100.0 / city);
+                offset.append(delta + " (" + percent + "%)");
+            }
         }
         table.insertColumn(table.columnIndex("price.city") + 1, offset);
     }
