@@ -33,8 +33,9 @@ public final class CentrisSearchCrawler {
     public CentrisSearchCrawler(Crawl4AiClient client) {
         this(client, new ExtractionSchemaLoader(), DEFAULT_SCHEMA, CrawlRunOptions.builder()
                 .cacheMode("enabled")
-                .waitFor("css:div.property-thumbnail-item")
-                .delayBeforeReturnHtml(2.0)
+                .waitFor("css:#divMainResult")
+                .waitForTimeoutMs(20_000)
+                .delayBeforeReturnHtml(5.0)
                 .build(), DEFAULT_MAX_PAGES);
     }
 
@@ -83,7 +84,8 @@ public final class CentrisSearchCrawler {
 
         for (int page = 1; page <= maxPages; page++) {
             String pageUrl = CentrisSearchUrls.withPage(searchUrl, page);
-            List<CentrisSearchHit> pageHits = crawlSinglePageAllowEmpty(pageUrl);
+            // Soft-fail wait timeouts only after page 1 — page 1 must actually extract hits.
+            List<CentrisSearchHit> pageHits = crawlSinglePageAllowEmpty(pageUrl, page > 1);
             System.out.printf("SEARCH page=%d hits=%d url=%s%n", page, pageHits.size(), pageUrl);
 
             int before = byId.size();
@@ -108,18 +110,22 @@ public final class CentrisSearchCrawler {
     }
 
     private List<CentrisSearchHit> crawlSinglePage(String searchUrl) {
-        List<CentrisSearchHit> hits = crawlSinglePageAllowEmpty(searchUrl);
+        List<CentrisSearchHit> hits = crawlSinglePageAllowEmpty(searchUrl, false);
         if (hits.isEmpty()) {
             throw new Crawl4AiException("No listing hits extracted from search page: " + searchUrl);
         }
         return hits;
     }
 
-    private List<CentrisSearchHit> crawlSinglePageAllowEmpty(String searchUrl) {
+    private List<CentrisSearchHit> crawlSinglePageAllowEmpty(String searchUrl, boolean softFailEmptyPage) {
         JsonNode request = schemas.buildCrawlRequest(searchUrl, searchSchema, options);
         Crawl4AiClient.CrawlResponse response = client.crawl(request);
         Crawl4AiClient.Result result = response.firstResult();
         if (!result.success()) {
+            if (softFailEmptyPage && isNoResultsPage(result.errorMessage())) {
+                System.out.printf("SEARCH empty/timeout treated as end: %s%n", summarize(result.errorMessage()));
+                return List.of();
+            }
             throw new Crawl4AiException("Search crawl failed: " + result.errorMessage());
         }
 
@@ -131,6 +137,25 @@ public final class CentrisSearchCrawler {
             }
         }
         return List.copyOf(byId.values());
+    }
+
+    /** Empty / out-of-range Centris pages never render listing cards; wait timeouts mean "no hits". */
+    private static boolean isNoResultsPage(String errorMessage) {
+        if (errorMessage == null || errorMessage.isBlank()) {
+            return false;
+        }
+        String lower = errorMessage.toLowerCase();
+        return lower.contains("wait condition failed")
+                || lower.contains("timeout")
+                || lower.contains("property-thumbnail-item");
+    }
+
+    private static String summarize(String errorMessage) {
+        if (errorMessage == null) {
+            return "";
+        }
+        String oneLine = errorMessage.replace('\n', ' ').trim();
+        return oneLine.length() <= 160 ? oneLine : oneLine.substring(0, 160) + "...";
     }
 
     private static CentrisSearchHit toHit(JsonNode row) {

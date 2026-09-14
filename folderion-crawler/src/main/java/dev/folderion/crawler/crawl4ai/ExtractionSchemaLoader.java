@@ -82,6 +82,9 @@ public final class ExtractionSchemaLoader {
         if (opts.waitFor() != null && !opts.waitFor().isBlank()) {
             params.put("wait_for", opts.waitFor());
         }
+        if (opts.waitForTimeoutMs() != null) {
+            params.put("wait_for_timeout", opts.waitForTimeoutMs());
+        }
         if (opts.delayBeforeReturnHtml() != null) {
             params.put("delay_before_return_html", opts.delayBeforeReturnHtml());
         }

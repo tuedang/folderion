@@ -43,4 +43,24 @@ class ExtractionSchemaLoaderTest {
                 request.path("crawler_config").path("params").path("extraction_strategy")
                         .path("params").path("schema").path("type").asText());
     }
+
+    @Test
+    void buildsSearchRequestWithWaitTimeout() {
+        JsonNode schema = loader.loadClasspath("schemas/centris-search.extraction.json");
+        ObjectNode request = loader.buildCrawlRequest(
+                "https://www.centris.ca/en/houses~for-sale?page=1",
+                schema,
+                CrawlRunOptions.builder()
+                        .waitFor("css:#divMainResult")
+                        .waitForTimeoutMs(20_000)
+                        .delayBeforeReturnHtml(5.0)
+                        .cacheMode("enabled")
+                        .build());
+
+        var params = request.path("crawler_config").path("params");
+        assertEquals("css:#divMainResult", params.path("wait_for").asText());
+        assertEquals(20_000, params.path("wait_for_timeout").asInt());
+        assertEquals(5.0, params.path("delay_before_return_html").asDouble());
+        assertEquals("enabled", params.path("cache_mode").asText());
+    }
 }
