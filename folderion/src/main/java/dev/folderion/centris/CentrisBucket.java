@@ -50,9 +50,7 @@ public final class CentrisBucket implements BucketType {
                 .path("source_url", "original.url")
                 .media(MediaSlot.imageSet(IMAGES_SLOT, "media/images", "media/images/manifest.json"))
                 .media(MediaSlot.urlFile("source_url", "original.url"))
-                .fingerprintFields(
-                        "title", "address", "price", "features", "financial",
-                        "description", "brokers", "open_houses")
+                .fingerprintFields("address", "price", "financial", "open_houses")
                 .build();
     }
 }
