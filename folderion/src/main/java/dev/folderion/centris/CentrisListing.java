@@ -158,6 +158,8 @@ public final class CentrisListing {
         private Assessment municipalAssessment2026;
         @JsonProperty("taxes_yearly")
         private TaxesYearly taxesYearly;
+        @JsonProperty("fees_yearly")
+        private FeesYearly feesYearly;
         @JsonProperty("expenses_yearly")
         private ExpensesYearly expensesYearly;
         @JsonProperty("condo_fees_monthly")
@@ -202,6 +204,19 @@ public final class CentrisListing {
     public static final class ExpensesYearly {
         private Integer electricity;
         private Integer gas;
+        private Integer total;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static final class FeesYearly {
+        @JsonProperty("common_expenses")
+        private Integer commonExpenses;
         private Integer total;
     }
 

@@ -125,14 +125,17 @@ public final class CentrisListingMapper {
         Integer municipalTax = null;
         Integer schoolTax = null;
         Integer taxTotal = null;
+        Integer commonExpenses = null;
+        Integer feesTotal = null;
         Integer electricity = null;
         Integer gas = null;
         Integer expenseTotal = null;
 
-        // Rows appear as assessment → taxes (monthly then yearly) → expenses (monthly then yearly).
+        // Rows: assessment → taxes → fees → expenses (each often monthly then yearly).
         // Last write wins so yearly overwrites monthly when both are present.
-        boolean inTaxes = false;
-        boolean inExpenses = false;
+        enum Section { ASSESSMENT, TAXES, FEES, EXPENSES }
+        Section section = Section.ASSESSMENT;
+
         for (JsonNode row : rowsNode) {
             String label = text(row, "label");
             String value = text(row, "value");
@@ -149,43 +152,42 @@ public final class CentrisListingMapper {
             }
             if (key.startsWith("municipal")) {
                 municipalTax = amount;
-                inTaxes = true;
-                inExpenses = false;
+                section = Section.TAXES;
             } else if (key.startsWith("school")) {
                 schoolTax = amount;
-                inTaxes = true;
-                inExpenses = false;
+                section = Section.TAXES;
+            } else if (key.contains("common expenses")
+                    || key.contains("condo fees")
+                    || key.contains("co-ownership fees")
+                    || key.contains("frais de condo")
+                    || key.contains("frais communs")) {
+                commonExpenses = amount;
+                section = Section.FEES;
             } else if (key.startsWith("electricity") || key.startsWith("électricité") || key.startsWith("electricite")) {
                 electricity = amount;
-                inExpenses = true;
-                inTaxes = false;
+                section = Section.EXPENSES;
             } else if (key.startsWith("gas") || key.startsWith("gaz")) {
                 gas = amount;
-                inExpenses = true;
-                inTaxes = false;
+                section = Section.EXPENSES;
             } else if (key.equals("lot")) {
                 lot = amount;
-                inTaxes = false;
-                inExpenses = false;
+                section = Section.ASSESSMENT;
             } else if (key.equals("building")) {
                 building = amount;
-                inTaxes = false;
-                inExpenses = false;
+                section = Section.ASSESSMENT;
             } else if (key.equals("total")) {
-                if (inExpenses) {
-                    expenseTotal = amount;
-                } else if (inTaxes) {
-                    taxTotal = amount;
-                } else {
-                    assessmentTotal = amount;
+                switch (section) {
+                    case EXPENSES -> expenseTotal = amount;
+                    case FEES -> feesTotal = amount;
+                    case TAXES -> taxTotal = amount;
+                    case ASSESSMENT -> assessmentTotal = amount;
                 }
-            } else if (key.contains("condo fees") || key.contains("co-ownership fees")) {
-                // CentrisListing has condo fee fields; leave for a dedicated mapping later.
             }
         }
 
         if (lot == null && building == null && assessmentTotal == null
                 && municipalTax == null && schoolTax == null && taxTotal == null
+                && commonExpenses == null && feesTotal == null
                 && electricity == null && gas == null && expenseTotal == null) {
             return null;
         }
@@ -214,6 +216,14 @@ public final class CentrisListingMapper {
                     .total(total)
                     .build();
         }
+        CentrisListing.FeesYearly fees = null;
+        if (commonExpenses != null || feesTotal != null) {
+            Integer total = feesTotal != null ? feesTotal : commonExpenses;
+            fees = CentrisListing.FeesYearly.builder()
+                    .commonExpenses(commonExpenses)
+                    .total(total)
+                    .build();
+        }
         CentrisListing.ExpensesYearly expenses = null;
         if (electricity != null || gas != null || expenseTotal != null) {
             Integer total = expenseTotal;
@@ -229,7 +239,10 @@ public final class CentrisListingMapper {
         return CentrisListing.Financial.builder()
                 .municipalAssessment2026(assessment)
                 .taxesYearly(taxes)
+                .feesYearly(fees)
                 .expensesYearly(expenses)
+                // Keep legacy condo fee fields in sync with Centris "Common Expenses".
+                .condoFeesYearly(commonExpenses)
                 .build();
     }
 

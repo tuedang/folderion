@@ -46,25 +46,19 @@ class BucketQueryTest {
 
             Table table = new BucketQuery(bucket, List.of(
                     "id",
+                    "title",
                     "features.year_built as year",
-                    "price.amount",
-                    "financial.municipal_assessment_2026.total as price.city",
-                    "features.bedrooms as bedrooms",
-                    "features.bedrooms_note as bedrooms_note",
-                    "features.bathrooms as bathrooms",
-                    "address.street as address",
-                    "address.city as city",
-                    "source.url as url"
+                    "price.amount"
             )).table();
-            addRealBedroomsColumn(table);
-            addPriceOffsetColumn(table);
+//            addRealBedroomsColumn(table);
+//            addPriceOffsetColumn(table);
 
             table.insertColumn(0, IntColumn.create("#", IntStream.rangeClosed(1, table.rowCount()).toArray()));
 
             System.out.println(table.printAll());
 
             assertEquals(2, table.rowCount());
-            assertEquals(List.of("id", "title", "year", "price.amount"), table.columnNames());
+            assertEquals(List.of("#", "id", "title", "year", "price.amount"), table.columnNames());
             assertEquals(List.of("17351555", "27481461"), table.stringColumn("id").asList());
             assertEquals("House for sale", table.stringColumn("title").get(0));
             assertEquals(2017L, table.longColumn("year").getLong(0));
@@ -82,12 +76,14 @@ class BucketQueryTest {
                     "features.year_built as year",
                     "price.amount",
                     "financial.municipal_assessment_2026.total as price.city",
+                    "financial.fees_yearly.total as fees",
                     "features.bedrooms as bedrooms",
                     "features.bedrooms_note as bedrooms_note",
                     "features.bathrooms as bathrooms",
                     "address.street as address",
                     "address.city as city",
                     "source.url as url"
+
             )).table();
             addRealBedroomsColumn(table);
             addPriceOffsetColumn(table);
