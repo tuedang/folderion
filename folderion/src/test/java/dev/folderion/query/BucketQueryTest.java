@@ -48,6 +48,7 @@ class BucketQueryTest {
                     "id",
                     "features.year_built as year",
                     "price.amount",
+                    "financial.municipal_assessment_2026.total as price.city",
                     "features.bedrooms as bedrooms",
                     "features.bedrooms_note as bedrooms_note",
                     "features.bathrooms as bathrooms",
@@ -56,9 +57,11 @@ class BucketQueryTest {
                     "source.url as url"
             )).table();
             addRealBedroomsColumn(table);
+            addPriceOffsetColumn(table);
             table = table.where(table.intColumn("real_bedrooms").isGreaterThanOrEqualTo(3));
+            table = table.where(table.longColumn("bathrooms").isGreaterThanOrEqualTo(2));
             table = table.dropWhere(table.stringColumn("city").containsString("Montréal"));
-            table = table.sortDescendingOn("bedrooms", "city");
+            table = table.sortDescendingOn("city", "bedrooms");
 
             table.insertColumn(0, IntColumn.create("#", IntStream.rangeClosed(1, table.rowCount()).toArray()));
 
@@ -157,6 +160,21 @@ class BucketQueryTest {
             real.append(realBedrooms(bedrooms.getLong(i), note));
         }
         table.insertColumn(table.columnIndex("bedrooms") + 1, real);
+    }
+
+    /** {@code price.offset = price.amount - price.city}. */
+    private static void addPriceOffsetColumn(Table table) {
+        LongColumn amount = table.longColumn("price.amount");
+        LongColumn cityPrice = table.longColumn("price.city");
+        LongColumn offset = LongColumn.create("price.offset");
+        for (int i = 0; i < table.rowCount(); i++) {
+            if (amount.isMissing(i) || cityPrice.isMissing(i)) {
+                offset.appendMissing();
+                continue;
+            }
+            offset.append(amount.getLong(i) - cityPrice.getLong(i));
+        }
+        table.insertColumn(table.columnIndex("price.city") + 1, offset);
     }
 
     private static int realBedrooms(long bedrooms, String bedroomsNote) {
