@@ -47,7 +47,6 @@ public final class CentrisBucket implements BucketType {
                 .recordType(RECORD_TYPE)
                 .layoutVersion(LAYOUT_VERSION)
                 .path("record", "record.json")
-                .path("readme", "recordme.md")
                 .path("source_url", "original.url")
                 .media(MediaSlot.imageSet(IMAGES_SLOT, "media/images", "media/images/manifest.json"))
                 .media(MediaSlot.urlFile("source_url", "original.url"))

@@ -274,11 +274,6 @@ public final class Bucket implements AutoCloseable {
     private void writeRecordTree(Path staging, WritePlan plan, ObjectNode record) {
         Json.write(staging.resolve(schema.path("record")), record);
 
-        String readmePath = schema.pathOrDefault("readme", "recordme.md");
-        if (plan.readmeMarkdown() != null) {
-            Io.writeText(staging.resolve(readmePath), plan.readmeMarkdown());
-        }
-
         if (plan.sourceUrl() != null) {
             MediaSlot urlSlot = findUrlSlot().orElse(null);
             String urlPath = urlSlot != null ? urlSlot.getPath() : schema.pathOrDefault("source_url", "original.url");

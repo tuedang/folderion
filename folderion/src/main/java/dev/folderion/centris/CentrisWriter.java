@@ -20,7 +20,7 @@ public final class CentrisWriter {
     }
 
     /**
-     * Persist listing metadata, README, source URL, and optional image blobs.
+     * Persist listing metadata, source URL, and optional image blobs.
      *
      * @param listing parsed listing DTO
      * @param images  prepared image bytes (may be empty); typically from {@link CentrisImageFetcher}
@@ -33,8 +33,7 @@ public final class CentrisWriter {
         WritePlan.Builder plan = WritePlan.builder()
                 .id(listing.getId())
                 .record(listing.toRecordPayload())
-                .sourceUrl(listing.sourceUrl())
-                .readmeMarkdown(CentrisReadme.generate(listing));
+                .sourceUrl(listing.sourceUrl());
 
         if (!imageList.isEmpty()) {
             plan.images(CentrisBucket.IMAGES_SLOT, imageList);

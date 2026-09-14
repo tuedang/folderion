@@ -91,7 +91,7 @@ class CentrisListingRecordTest {
                     || inventoryJson.contains("\"digestAlgorithm\":\"sha256\""));
 
             assertTrue(Files.isRegularFile(recordDir.resolve("record.json")));
-            assertTrue(Files.isRegularFile(recordDir.resolve("recordme.md")));
+            assertFalse(Files.exists(recordDir.resolve("recordme.md")));
             assertTrue(Files.isRegularFile(recordDir.resolve("original.url")));
             assertTrue(Files.isRegularFile(recordDir.resolve("media/images/01.jpg")));
             assertTrue(Files.isRegularFile(recordDir.resolve("media/images/manifest.json")));
@@ -110,10 +110,6 @@ class CentrisListingRecordTest {
 
             assertEquals(3, reader.imageManifest(CENTRIS_NO).orElseThrow().getCount());
             assertEquals(3, reader.imagePaths(CENTRIS_NO).size());
-
-            String readme = reader.readme(CENTRIS_NO).orElseThrow();
-            assertTrue(readme.contains("27481461"));
-            assertTrue(readme.contains("$688,800"));
         }
     }
 

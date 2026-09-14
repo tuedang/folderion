@@ -3,7 +3,6 @@ package dev.folderion.core;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ public final class WritePlan {
 
     private final String id;
     private final ObjectNode record;
-    private final String readmeMarkdown;
     private final String sourceUrl;
     private final Map<String, List<MediaBlob>> mediaBySlot;
     private final Map<String, byte[]> singleBlobsBySlot;
@@ -24,7 +22,6 @@ public final class WritePlan {
     private WritePlan(Builder builder) {
         this.id = Objects.requireNonNull(builder.id, "id");
         this.record = Objects.requireNonNull(builder.record, "record");
-        this.readmeMarkdown = builder.readmeMarkdown;
         this.sourceUrl = builder.sourceUrl;
         this.mediaBySlot = Map.copyOf(builder.mediaBySlot);
         this.singleBlobsBySlot = Map.copyOf(builder.singleBlobsBySlot);
@@ -42,10 +39,6 @@ public final class WritePlan {
         return record;
     }
 
-    public String readmeMarkdown() {
-        return readmeMarkdown;
-    }
-
     public String sourceUrl() {
         return sourceUrl;
     }
@@ -61,7 +54,6 @@ public final class WritePlan {
     public static final class Builder {
         private String id;
         private ObjectNode record;
-        private String readmeMarkdown;
         private String sourceUrl;
         private final Map<String, List<MediaBlob>> mediaBySlot = new LinkedHashMap<>();
         private final Map<String, byte[]> singleBlobsBySlot = new LinkedHashMap<>();
@@ -82,11 +74,6 @@ public final class WritePlan {
 
         public Builder record(ObjectNode record) {
             this.record = record;
-            return this;
-        }
-
-        public Builder readmeMarkdown(String readmeMarkdown) {
-            this.readmeMarkdown = readmeMarkdown;
             return this;
         }
 

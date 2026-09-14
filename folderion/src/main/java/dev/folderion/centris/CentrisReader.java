@@ -78,10 +78,6 @@ public final class CentrisReader {
     public record PriceHistoryEntry(String versionId, CentrisListing.Price price) {
     }
 
-    public Optional<String> readme(String id) {
-        return bucket.readLogicalText(id, bucket.schema().path("readme")).map(String::trim);
-    }
-
     public Optional<String> sourceUrl(String id) {
         return bucket.readLogicalText(id, bucket.schema().path("source_url")).map(String::trim);
     }
