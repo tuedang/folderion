@@ -36,13 +36,20 @@ public final class CentrisCrawlJob {
     }
 
     public Report run(String searchUrl, Path bucketRoot, int maxListings) {
+        return run(searchUrl, bucketRoot, maxListings, false);
+    }
+
+    /**
+     * @param paginate when {@code true}, crawl every search results page ({@code page=1..N})
+     */
+    public Report run(String searchUrl, Path bucketRoot, int maxListings, boolean paginate) {
         Objects.requireNonNull(searchUrl, "searchUrl");
         Objects.requireNonNull(bucketRoot, "bucketRoot");
         if (maxListings < 1) {
             throw new IllegalArgumentException("maxListings must be >= 1");
         }
 
-        List<CentrisSearchHit> hits = searchCrawler.crawl(searchUrl);
+        List<CentrisSearchHit> hits = searchCrawler.crawl(searchUrl, paginate);
         if (hits.size() > maxListings) {
             hits = hits.subList(0, maxListings);
         }

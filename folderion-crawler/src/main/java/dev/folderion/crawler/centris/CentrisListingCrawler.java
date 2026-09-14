@@ -23,6 +23,7 @@ public final class CentrisListingCrawler {
 
     public CentrisListingCrawler(Crawl4AiClient client) {
         this(client, new ExtractionSchemaLoader(), DEFAULT_SCHEMA, CrawlRunOptions.builder()
+                .cacheMode("enabled")
                 .waitFor("css:div.region-content")
                 .delayBeforeReturnHtml(2.0)
                 .build(), new CentrisListingMapper());

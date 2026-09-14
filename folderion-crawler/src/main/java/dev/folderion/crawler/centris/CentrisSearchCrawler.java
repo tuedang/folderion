@@ -20,18 +20,22 @@ import java.util.regex.Pattern;
 public final class CentrisSearchCrawler {
 
     public static final String DEFAULT_SCHEMA = "schemas/centris-search.extraction.json";
+    public static final int DEFAULT_MAX_PAGES = 200;
+
     private static final Pattern ID_IN_URL = Pattern.compile("/(\\d{5,})/?$");
 
     private final Crawl4AiClient client;
     private final ExtractionSchemaLoader schemas;
     private final JsonNode searchSchema;
     private final CrawlRunOptions options;
+    private final int maxPages;
 
     public CentrisSearchCrawler(Crawl4AiClient client) {
         this(client, new ExtractionSchemaLoader(), DEFAULT_SCHEMA, CrawlRunOptions.builder()
+                .cacheMode("enabled")
                 .waitFor("css:div.property-thumbnail-item")
                 .delayBeforeReturnHtml(2.0)
-                .build());
+                .build(), DEFAULT_MAX_PAGES);
     }
 
     public CentrisSearchCrawler(
@@ -39,14 +43,79 @@ public final class CentrisSearchCrawler {
             ExtractionSchemaLoader schemas,
             String schemaClasspath,
             CrawlRunOptions options) {
+        this(client, schemas, schemaClasspath, options, DEFAULT_MAX_PAGES);
+    }
+
+    public CentrisSearchCrawler(
+            Crawl4AiClient client,
+            ExtractionSchemaLoader schemas,
+            String schemaClasspath,
+            CrawlRunOptions options,
+            int maxPages) {
         this.client = Objects.requireNonNull(client, "client");
         this.schemas = Objects.requireNonNull(schemas, "schemas");
         this.searchSchema = this.schemas.loadClasspath(schemaClasspath);
         this.options = Objects.requireNonNull(options, "options");
+        if (maxPages < 1) {
+            throw new IllegalArgumentException("maxPages must be >= 1");
+        }
+        this.maxPages = maxPages;
     }
 
+    /**
+     * Crawl a single search URL as-is (no pagination).
+     */
     public List<CentrisSearchHit> crawl(String searchUrl) {
+        return crawl(searchUrl, false);
+    }
+
+    /**
+     * @param paginate when {@code true}, walk {@code page=1..N} until a page returns no new hits
+     */
+    public List<CentrisSearchHit> crawl(String searchUrl, boolean paginate) {
         Objects.requireNonNull(searchUrl, "searchUrl");
+        if (!paginate) {
+            return crawlSinglePage(searchUrl);
+        }
+
+        int pageSize = CentrisSearchUrls.pageSize(searchUrl);
+        Map<String, CentrisSearchHit> byId = new LinkedHashMap<>();
+
+        for (int page = 1; page <= maxPages; page++) {
+            String pageUrl = CentrisSearchUrls.withPage(searchUrl, page);
+            List<CentrisSearchHit> pageHits = crawlSinglePageAllowEmpty(pageUrl);
+            System.out.printf("SEARCH page=%d hits=%d url=%s%n", page, pageHits.size(), pageUrl);
+
+            int before = byId.size();
+            for (CentrisSearchHit hit : pageHits) {
+                byId.putIfAbsent(hit.id(), hit);
+            }
+            int added = byId.size() - before;
+
+            if (pageHits.isEmpty() || added == 0) {
+                break;
+            }
+            // Last page typically has fewer cards than pageSize.
+            if (pageHits.size() < pageSize) {
+                break;
+            }
+        }
+
+        if (byId.isEmpty()) {
+            throw new Crawl4AiException("No listing hits extracted across search pages: " + searchUrl);
+        }
+        return List.copyOf(byId.values());
+    }
+
+    private List<CentrisSearchHit> crawlSinglePage(String searchUrl) {
+        List<CentrisSearchHit> hits = crawlSinglePageAllowEmpty(searchUrl);
+        if (hits.isEmpty()) {
+            throw new Crawl4AiException("No listing hits extracted from search page: " + searchUrl);
+        }
+        return hits;
+    }
+
+    private List<CentrisSearchHit> crawlSinglePageAllowEmpty(String searchUrl) {
         JsonNode request = schemas.buildCrawlRequest(searchUrl, searchSchema, options);
         Crawl4AiClient.CrawlResponse response = client.crawl(request);
         Crawl4AiClient.Result result = response.firstResult();
@@ -60,9 +129,6 @@ public final class CentrisSearchCrawler {
             if (hit != null && hit.id() != null && !hit.id().isBlank()) {
                 byId.putIfAbsent(hit.id(), hit);
             }
-        }
-        if (byId.isEmpty()) {
-            throw new Crawl4AiException("No listing hits extracted from search page: " + searchUrl);
         }
         return List.copyOf(byId.values());
     }

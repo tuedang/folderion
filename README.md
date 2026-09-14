@@ -45,7 +45,7 @@ Schemas (edit without recompiling Java field maps):
 - `folderion-crawler/src/main/resources/schemas/centris-listing.extraction.json`
 
 ```bash
-./gradlew :folderion-crawler:run --args="--bucket buckets/centris --max-listings 5"
+./gradlew :folderion-crawler:run --args="--bucket buckets/centris --paginate true --max-listings 100"
 ```
 
 Defaults:
@@ -53,6 +53,8 @@ Defaults:
 - Crawl4AI: `http://192.168.68.57:11235` (`CRAWL4AI_URL` / `--crawl4ai-url`)
 - Bearer token: `mytoken` (`CRAWL4AI_TOKEN` / `--token`)
 - Search URL: the Centris houses query baked into `CentrisCrawlerApp`
+- `--paginate false`: only the search URL’s current page
+- `--paginate true`: walk `page=1..N` until a page returns no new hits (requests use `cache_mode=enabled`)
 
 ## Build
 

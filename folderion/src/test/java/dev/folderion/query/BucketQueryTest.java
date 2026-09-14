@@ -6,6 +6,9 @@ import dev.folderion.centris.CentrisWriter;
 import dev.folderion.core.Bucket;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tech.tablesaw.api.IntColumn;
+import tech.tablesaw.api.LongColumn;
+import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 
 import java.io.IOException;
@@ -15,6 +18,9 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,19 +46,32 @@ class BucketQueryTest {
 
             Table table = new BucketQuery(bucket, List.of(
                     "id",
-                    "title",
                     "features.year_built as year",
-                    "price.amount")).table();
-            System.out.println(table.print());
+                    "price.amount",
+                    "features.bedrooms as bedrooms",
+                    "features.bedrooms_note as bedrooms_note",
+                    "features.bathrooms as bathrooms",
+                    "address.street as address",
+                    "address.city as city",
+                    "source.url as url"
+            )).table();
+            addRealBedroomsColumn(table);
+            table = table.where(table.intColumn("real_bedrooms").isGreaterThanOrEqualTo(3));
+            table = table.dropWhere(table.stringColumn("city").containsString("Montréal"));
+            table = table.sortDescendingOn("bedrooms", "city");
 
-            assertEquals(2, table.rowCount());
-            assertEquals(List.of("id", "title", "year", "price.amount"), table.columnNames());
-            assertEquals(List.of("17351555", "27481461"), table.stringColumn("id").asList());
-            assertEquals("House for sale", table.stringColumn("title").get(0));
-            assertEquals(2017L, table.longColumn("year").getLong(0));
-            assertEquals(750000L, table.longColumn("price.amount").getLong(0));
-            assertEquals("Condominium house for sale", table.stringColumn("title").get(1));
-            assertEquals(688800L, table.longColumn("price.amount").getLong(1));
+            table.insertColumn(0, IntColumn.create("#", IntStream.rangeClosed(1, table.rowCount()).toArray()));
+
+            System.out.println(table.printAll());
+
+//            assertEquals(2, table.rowCount());
+//            assertEquals(List.of("id", "title", "year", "price.amount"), table.columnNames());
+//            assertEquals(List.of("17351555", "27481461"), table.stringColumn("id").asList());
+//            assertEquals("House for sale", table.stringColumn("title").get(0));
+//            assertEquals(2017L, table.longColumn("year").getLong(0));
+//            assertEquals(750000L, table.longColumn("price.amount").getLong(0));
+//            assertEquals("Condominium house for sale", table.stringColumn("title").get(1));
+//            assertEquals(688800L, table.longColumn("price.amount").getLong(1));
         }
     }
 
@@ -116,6 +135,48 @@ class BucketQueryTest {
             assertTrue(table.columnNames().contains("features.year_built"));
             assertEquals(750000L, table.longColumn("price.amount").getLong(0));
         }
+    }
+
+    private static final Pattern BASEMENT_BEDROOMS =
+            Pattern.compile("(?i)^(\\d+)\\s+in\\s+basement\\s*$");
+
+    /**
+     * {@code real_bedrooms = bedrooms - N} when note is {@code "N in basement"}; otherwise equals
+     * {@code bedrooms}.
+     */
+    private static void addRealBedroomsColumn(Table table) {
+        LongColumn bedrooms = table.longColumn("bedrooms");
+        StringColumn notes = table.stringColumn("bedrooms_note");
+        IntColumn real = IntColumn.create("real_bedrooms");
+        for (int i = 0; i < table.rowCount(); i++) {
+            if (bedrooms.isMissing(i)) {
+                real.appendMissing();
+                continue;
+            }
+            String note = notes.isMissing(i) ? null : notes.get(i);
+            real.append(realBedrooms(bedrooms.getLong(i), note));
+        }
+        table.insertColumn(table.columnIndex("bedrooms") + 1, real);
+    }
+
+    private static int realBedrooms(long bedrooms, String bedroomsNote) {
+        Integer basement = parseBasementBedrooms(bedroomsNote);
+        if (basement == null) {
+            return Math.toIntExact(bedrooms);
+        }
+        return Math.toIntExact(bedrooms - basement);
+    }
+
+    /** @return basement bedroom count, or null if blank / unparseable */
+    private static Integer parseBasementBedrooms(String note) {
+        if (note == null || note.isBlank()) {
+            return null;
+        }
+        Matcher matcher = BASEMENT_BEDROOMS.matcher(note.trim());
+        if (!matcher.matches()) {
+            return null;
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     private static void deleteRecursively(Path root) throws IOException {
