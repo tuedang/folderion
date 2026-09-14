@@ -125,9 +125,14 @@ public final class CentrisListingMapper {
         Integer municipalTax = null;
         Integer schoolTax = null;
         Integer taxTotal = null;
+        Integer electricity = null;
+        Integer gas = null;
+        Integer expenseTotal = null;
 
-        // Heuristic: first Lot/Building/Total belong to assessment; later Municipal/School/Total to taxes.
+        // Rows appear as assessment → taxes (monthly then yearly) → expenses (monthly then yearly).
+        // Last write wins so yearly overwrites monthly when both are present.
         boolean inTaxes = false;
+        boolean inExpenses = false;
         for (JsonNode row : rowsNode) {
             String label = text(row, "label");
             String value = text(row, "value");
@@ -145,26 +150,43 @@ public final class CentrisListingMapper {
             if (key.startsWith("municipal")) {
                 municipalTax = amount;
                 inTaxes = true;
+                inExpenses = false;
             } else if (key.startsWith("school")) {
                 schoolTax = amount;
                 inTaxes = true;
+                inExpenses = false;
+            } else if (key.startsWith("electricity") || key.startsWith("électricité") || key.startsWith("electricite")) {
+                electricity = amount;
+                inExpenses = true;
+                inTaxes = false;
+            } else if (key.startsWith("gas") || key.startsWith("gaz")) {
+                gas = amount;
+                inExpenses = true;
+                inTaxes = false;
             } else if (key.equals("lot")) {
                 lot = amount;
+                inTaxes = false;
+                inExpenses = false;
             } else if (key.equals("building")) {
                 building = amount;
+                inTaxes = false;
+                inExpenses = false;
             } else if (key.equals("total")) {
-                if (inTaxes || municipalTax != null || schoolTax != null) {
+                if (inExpenses) {
+                    expenseTotal = amount;
+                } else if (inTaxes) {
                     taxTotal = amount;
                 } else {
                     assessmentTotal = amount;
                 }
             } else if (key.contains("condo fees") || key.contains("co-ownership fees")) {
-                // leave for future; CentrisListing has condo fee fields
+                // CentrisListing has condo fee fields; leave for a dedicated mapping later.
             }
         }
 
         if (lot == null && building == null && assessmentTotal == null
-                && municipalTax == null && schoolTax == null && taxTotal == null) {
+                && municipalTax == null && schoolTax == null && taxTotal == null
+                && electricity == null && gas == null && expenseTotal == null) {
             return null;
         }
 
@@ -192,9 +214,22 @@ public final class CentrisListingMapper {
                     .total(total)
                     .build();
         }
+        CentrisListing.ExpensesYearly expenses = null;
+        if (electricity != null || gas != null || expenseTotal != null) {
+            Integer total = expenseTotal;
+            if (total == null && electricity != null && gas != null) {
+                total = electricity + gas;
+            }
+            expenses = CentrisListing.ExpensesYearly.builder()
+                    .electricity(electricity)
+                    .gas(gas)
+                    .total(total)
+                    .build();
+        }
         return CentrisListing.Financial.builder()
                 .municipalAssessment2026(assessment)
                 .taxesYearly(taxes)
+                .expensesYearly(expenses)
                 .build();
     }
 

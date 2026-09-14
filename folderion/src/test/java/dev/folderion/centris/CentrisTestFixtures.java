@@ -119,6 +119,11 @@ public final class CentrisTestFixtures {
                                 .school(459)
                                 .total(3805)
                                 .build())
+                        .expensesYearly(CentrisListing.ExpensesYearly.builder()
+                                .electricity(3540)
+                                .gas(287)
+                                .total(3827)
+                                .build())
                         .build())
                 .description(
                         "Turnkey end-unit townhouse built in 2017! This superb property features a garage and a private, "

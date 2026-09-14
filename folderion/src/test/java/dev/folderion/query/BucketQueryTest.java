@@ -39,11 +39,44 @@ class BucketQueryTest {
      */
     @Test
     void listsAllCentrisItems() {
-        try (Bucket bucket = CentrisBucket.INSTANCE.open(tempDir.resolve("D:\\workspace\\folderion\\buckets\\centris"))) {
-//            CentrisWriter writer = new CentrisWriter(bucket);
-//            writer.write(CentrisTestFixtures.listing27481461(), List.of());
-//            writer.write(CentrisTestFixtures.listing17351555(), List.of());
+        try (Bucket bucket = CentrisBucket.INSTANCE.init(tempDir.resolve("buckets/query-test/centris-list"))) {
+            CentrisWriter writer = new CentrisWriter(bucket);
+            writer.write(CentrisTestFixtures.listing27481461(), List.of());
+            writer.write(CentrisTestFixtures.listing17351555(), List.of());
 
+            Table table = new BucketQuery(bucket, List.of(
+                    "id",
+                    "features.year_built as year",
+                    "price.amount",
+                    "financial.municipal_assessment_2026.total as price.city",
+                    "features.bedrooms as bedrooms",
+                    "features.bedrooms_note as bedrooms_note",
+                    "features.bathrooms as bathrooms",
+                    "address.street as address",
+                    "address.city as city",
+                    "source.url as url"
+            )).table();
+            addRealBedroomsColumn(table);
+            addPriceOffsetColumn(table);
+
+            table.insertColumn(0, IntColumn.create("#", IntStream.rangeClosed(1, table.rowCount()).toArray()));
+
+            System.out.println(table.printAll());
+
+            assertEquals(2, table.rowCount());
+            assertEquals(List.of("id", "title", "year", "price.amount"), table.columnNames());
+            assertEquals(List.of("17351555", "27481461"), table.stringColumn("id").asList());
+            assertEquals("House for sale", table.stringColumn("title").get(0));
+            assertEquals(2017L, table.longColumn("year").getLong(0));
+            assertEquals(750000L, table.longColumn("price.amount").getLong(0));
+            assertEquals("Condominium house for sale", table.stringColumn("title").get(1));
+            assertEquals(688800L, table.longColumn("price.amount").getLong(1));
+        }
+    }
+
+    @Test
+    void listsCentrisItemsByCondition() {
+        try (Bucket bucket = CentrisBucket.INSTANCE.open(tempDir.resolve("D:\\workspace\\folderion\\buckets\\centris"))) {
             Table table = new BucketQuery(bucket, List.of(
                     "id",
                     "features.year_built as year",
@@ -66,15 +99,6 @@ class BucketQueryTest {
             table.insertColumn(0, IntColumn.create("#", IntStream.rangeClosed(1, table.rowCount()).toArray()));
 
             System.out.println(table.printAll());
-
-//            assertEquals(2, table.rowCount());
-//            assertEquals(List.of("id", "title", "year", "price.amount"), table.columnNames());
-//            assertEquals(List.of("17351555", "27481461"), table.stringColumn("id").asList());
-//            assertEquals("House for sale", table.stringColumn("title").get(0));
-//            assertEquals(2017L, table.longColumn("year").getLong(0));
-//            assertEquals(750000L, table.longColumn("price.amount").getLong(0));
-//            assertEquals("Condominium house for sale", table.stringColumn("title").get(1));
-//            assertEquals(688800L, table.longColumn("price.amount").getLong(1));
         }
     }
 

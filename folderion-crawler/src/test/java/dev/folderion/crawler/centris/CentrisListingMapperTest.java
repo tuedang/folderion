@@ -41,7 +41,13 @@ class CentrisListingMapperTest {
                     {"label": "Total", "value": "$647,700"},
                     {"label": "Municipal (2026)", "value": "$3,346"},
                     {"label": "School (2026)", "value": "$456"},
-                    {"label": "Total", "value": "$3,802"}
+                    {"label": "Total", "value": "$3,802"},
+                    {"label": "Electricity", "value": "$295"},
+                    {"label": "Gas", "value": "$24"},
+                    {"label": "Total", "value": "$319"},
+                    {"label": "Electricity", "value": "$3,540"},
+                    {"label": "Gas", "value": "$287"},
+                    {"label": "Total", "value": "$3,827"}
                   ],
                   "brokers": [
                     {
@@ -70,6 +76,9 @@ class CentrisListingMapperTest {
         assertEquals(1, listing.getFeatures().getPowderRooms());
         assertEquals(158100, listing.getFinancial().getMunicipalAssessment2026().getLot());
         assertEquals(3346, listing.getFinancial().getTaxesYearly().getMunicipal());
+        assertEquals(3540, listing.getFinancial().getExpensesYearly().getElectricity());
+        assertEquals(287, listing.getFinancial().getExpensesYearly().getGas());
+        assertEquals(3827, listing.getFinancial().getExpensesYearly().getTotal());
         assertEquals(1, listing.getBrokers().size());
         assertEquals("Kristina Robinson-Palermo", listing.getBrokers().getFirst().getName());
         assertEquals(url, listing.sourceUrl());
