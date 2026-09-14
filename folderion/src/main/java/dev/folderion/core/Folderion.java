@@ -1,5 +1,6 @@
 package dev.folderion.core;
 
+import io.ocfl.api.DigestAlgorithmRegistry;
 import io.ocfl.api.OcflRepository;
 import io.ocfl.core.OcflRepositoryBuilder;
 import io.ocfl.core.extension.storage.layout.config.FlatLayoutConfig;
@@ -25,10 +26,12 @@ import java.util.Objects;
  *       ocfl_layout.json            ← required
  *       centris-27481461/           ← record data + versions
  *         inventory.json
+ *         inventory.json.sha256
  *         v1/content/…
  *     centris-work/                 ← OCFL workspace (sibling)
  * </pre>
  *
+ * Inventories use compact JSON and sha256 digests (smaller on disk / friendlier for git).
  * Spec markdown copied by ocfl-java is stripped after init (not required at runtime).
  */
 public final class Folderion {
@@ -125,6 +128,7 @@ public final class Folderion {
                 .defaultLayoutConfig(new FlatLayoutConfig())
                 .storage(storage -> storage.fileSystem(storageRoot))
                 .workDir(workDir)
+                .ocflConfig(config -> config.setDefaultDigestAlgorithm(DigestAlgorithmRegistry.sha256))
                 .prettyPrintJson()
                 .build();
     }

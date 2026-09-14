@@ -82,6 +82,14 @@ class CentrisListingRecordTest {
             assertFalse(Files.exists(tempDir.resolve("buckets/centris/0002-flat-direct-storage-layout.md")));
             assertFalse(Files.isDirectory(tempDir.resolve("buckets/centris-ocfl")));
 
+            Path objectRoot = tempDir.resolve("buckets/centris/centris-27481461");
+            assertTrue(Files.isRegularFile(objectRoot.resolve("inventory.json")));
+            assertTrue(Files.isRegularFile(objectRoot.resolve("inventory.json.sha256")));
+            assertFalse(Files.exists(objectRoot.resolve("inventory.json.sha512")));
+            String inventoryJson = Files.readString(objectRoot.resolve("inventory.json"));
+            assertTrue(inventoryJson.contains("\"digestAlgorithm\" : \"sha256\"")
+                    || inventoryJson.contains("\"digestAlgorithm\":\"sha256\""));
+
             assertTrue(Files.isRegularFile(recordDir.resolve("record.json")));
             assertTrue(Files.isRegularFile(recordDir.resolve("recordme.md")));
             assertTrue(Files.isRegularFile(recordDir.resolve("original.url")));

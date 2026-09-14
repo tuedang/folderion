@@ -20,7 +20,8 @@ buckets/
     0=ocfl_1.1                        ← required (NAMASTE)
     ocfl_layout.json                  ← required
     centris-27481461/                 ← record object (data + versions)
-      inventory.json
+      inventory.json                  ← compact JSON, sha256 digests
+      inventory.json.sha256           ← required OCFL sidecar
       v1/content/record.json
       v2/content/…
   centris-work/                       ← OCFL workspace (sibling)
