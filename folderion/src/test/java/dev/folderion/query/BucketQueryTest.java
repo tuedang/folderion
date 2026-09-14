@@ -90,7 +90,13 @@ class BucketQueryTest {
             table = table.where(table.intColumn("real_bedrooms").isGreaterThanOrEqualTo(3));
             table = table.where(table.longColumn("bathrooms").isGreaterThanOrEqualTo(2));
             table = table.dropWhere(table.stringColumn("city").containsString("Montréal"));
-            table = table.sortDescendingOn("city", "bedrooms");
+            table = table.dropWhere(table.stringColumn("city").isIn("Beaconsfield", "Pointe-Claire", "Côte-Saint-Luc", "Dollard-des-Ormeaux",
+                    "Boucherville", "Dorval"));
+
+            table = table.dropWhere(table.longColumn("fees").isGreaterThan(1000));
+            table = table.dropWhere(table.stringColumn("address").containsString("Z, "));
+
+            table = table.sortDescendingOn("year", "city", "bedrooms");
 
             table.insertColumn(0, IntColumn.create("#", IntStream.rangeClosed(1, table.rowCount()).toArray()));
 
