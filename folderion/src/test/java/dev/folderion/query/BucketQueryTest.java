@@ -83,8 +83,7 @@ class BucketQueryTest {
                     "address.street as address",
                     "address.city as city",
                     "source.url as url"
-
-            )).table();
+            )).table(-1); // HEAD + all older versions (each version once)
             addRealBedroomsColumn(table);
             addPriceOffsetColumn(table);
             table = table.where(table.intColumn("real_bedrooms").isGreaterThanOrEqualTo(3));

@@ -17,7 +17,7 @@ import java.util.Locale;
 public final class CentrisCrawlerApp {
 
     public static final String DEFAULT_SEARCH_URL =
-            "https://www.centris.ca/en/houses~for-sale?sort=DateDesc&q=H4sIAAAAAAAACo2U3W6bQBCFXwVxlUquRFynjtur2G2cqE5qhSpSf3IxhjGMurDu7JIURXn3DqY2eI1afAO7_ubscM7As58p47_zA3_gr1j_RJ7pGGVD1nq9pgg_YVkvC4Nz1AnDJi3DFDYodcHAN9XtPeGTLL8_yBqBo_QWskrlBij3IiaLTCAaa1JyW5HPfgY2Sr-Um4qbkS0_kLFMkRXM4m8ru6FU29cLyFbI1ju50bn9UQTBxwnXl4TwldAUCzsenfkvgz6qU11EKfIjKYVN9aRvNWtjgOOmctSzcgHekoGY9qee9z51ofOkwIKUd1KbclVUnrSefnyktAuLogtGaLQqG_8aCKJ3bRTk8V5pHs7D0dvh6T8bu0VK0pUuONU6DreBN_oHf3qfrXhtBp7r27f3_3PuQqlOA2TfW2nWRZKafdsiJbO3JlSxuQdVYD1j243r-NjXx4ppjU0PsM6qBzjqB573Vxw74FG0O_QgvW7h7ux2Ak0s3dV1KDvaJZesNzKW5TbNBgspTxReQkaqvNLyYXD0wWKiuWxV3KGhGHNLoBw4RKVEzj0B5F0-BO-0zkwLeVON_HDqUFOw6VI_xcguP-zk58CQYJs77eQW9ChdOumEvwpgvES0Dv1VYpjpXCwuIks6b8tPxkF_etL6uR3JW963n8rOpcTdtng0PgsCt5UucMsJ-PDyB_j7jaldBgAA&v=2&sortSeed=198967665&pageSize=20";
+            "https://www.centris.ca/en/houses~for-sale?sort=DateDesc&sortSeed=219314732&pageSize=20&q=H4sIAAAAAAAACo2U3W6bQBCFXwVxlUqu5LhOHbdXsds4UZ3UClWk_uRiDGMYdWHd2cUpivLuHUxs8BqlcGN2-ebscM7gJz9Vxv_g9_2ev2T9G3mqI5QNWevVikL8gkW1zA3OUMcM66QIElij1PV7vilv7wkfZfnzQdYIHCa3kJYqN0CZFzJZZALRWJGS25J88lOwYfKtWJfclGzxiYxlCq1gFv9a2Q2k2r6dQ7pEtt7Jjc7sr7zf_zzm6icmfCM0RcKOhmf-c6-L6kTnYYK8IaWwrh53rWZtDHBUVw47Vs7BWzAQ0_7U886nznUW55iT8k4qU67y0pPG24-OlHZhUXjBCLVWaeOLgSB610ZBFu2VZsEsGL4fnL7a2C1SnCx1zonWUbANvNY_eOh9teK16Xmubz8-_s-5C6VaDZB9b6lZ53Fi9m2LlMzeilBF5h5UjtWMbTeuo2NfNyXTGJsOYJVVB3DYDTzvrjhywKNod-hBeu3C7dntBOpY2qurUHa0Sy5Yr2Usi22aNRZQFiu8hJRUcaXlj8HRB4ux5qJRcYeGIswsgXLgAJUSOfcEkG_5ELzTOjUN5F058oOJQ03AJgv9GCG7_KCVnwFDjE3utJWb00a6dNIJ_uTAeIloHfq7xDDVmVich5Z01pQfj9wJfYUeNy63I_nKu_ZT2rmQuJsWn_XLqwN4_gI-PP8DDBvbqV0GAAA&v=2&view=Thumbnail";
 
     private CentrisCrawlerApp() {
     }
@@ -52,7 +52,7 @@ public final class CentrisCrawlerApp {
             String crawl4aiUrl = Crawl4AiConfig.DEFAULT_BASE_URL;
             String token = Crawl4AiConfig.DEFAULT_TOKEN;
             int maxListings = 20;
-            boolean paginate = false;
+            boolean paginate = true;
 
             for (int i = 0; i < args.length; i++) {
                 String arg = args[i];
