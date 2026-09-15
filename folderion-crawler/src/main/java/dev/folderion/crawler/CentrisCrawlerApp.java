@@ -19,6 +19,8 @@ public final class CentrisCrawlerApp {
     public static final String DEFAULT_SEARCH_URL =
             "https://www.centris.ca/en/houses~for-sale?sort=DateDesc&sortSeed=219314732&pageSize=20&q=H4sIAAAAAAAACo2U3W6bQBCFXwVxlUqu5LhOHbdXsds4UZ3UClWk_uRiDGMYdWHd2cUpivLuHUxs8BqlcGN2-ebscM7gJz9Vxv_g9_2ev2T9G3mqI5QNWevVikL8gkW1zA3OUMcM66QIElij1PV7vilv7wkfZfnzQdYIHCa3kJYqN0CZFzJZZALRWJGS25J88lOwYfKtWJfclGzxiYxlCq1gFv9a2Q2k2r6dQ7pEtt7Jjc7sr7zf_zzm6icmfCM0RcKOhmf-c6-L6kTnYYK8IaWwrh53rWZtDHBUVw47Vs7BWzAQ0_7U886nznUW55iT8k4qU67y0pPG24-OlHZhUXjBCLVWaeOLgSB610ZBFu2VZsEsGL4fnL7a2C1SnCx1zonWUbANvNY_eOh9teK16Xmubz8-_s-5C6VaDZB9b6lZ53Fi9m2LlMzeilBF5h5UjtWMbTeuo2NfNyXTGJsOYJVVB3DYDTzvrjhywKNod-hBeu3C7dntBOpY2qurUHa0Sy5Yr2Usi22aNRZQFiu8hJRUcaXlj8HRB4ux5qJRcYeGIswsgXLgAJUSOfcEkG_5ELzTOjUN5F058oOJQ03AJgv9GCG7_KCVnwFDjE3utJWb00a6dNIJ_uTAeIloHfq7xDDVmVich5Z01pQfj9wJfYUeNy63I_nKu_ZT2rmQuJsWn_XLqwN4_gI-PP8DDBvbqV0GAAA&v=2&view=Thumbnail";
 
+    public static final Path FOLDERION_DATA_BASE = Path.of("D:/workspace/folderion-data");
+
     private CentrisCrawlerApp() {
     }
 
@@ -48,7 +50,7 @@ public final class CentrisCrawlerApp {
 
         static Args parse(String[] args) {
             String searchUrl = DEFAULT_SEARCH_URL;
-            Path bucket = Path.of("buckets/centris");
+            Path bucket = Path.of(FOLDERION_DATA_BASE.toString(), "buckets/centris");
             String crawl4aiUrl = Crawl4AiConfig.DEFAULT_BASE_URL;
             String token = Crawl4AiConfig.DEFAULT_TOKEN;
             int maxListings = 20;

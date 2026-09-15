@@ -70,7 +70,7 @@ class BucketQueryTest {
 
     @Test
     void listsCentrisItemsByCondition() {
-        try (Bucket bucket = CentrisBucket.INSTANCE.open(tempDir.resolve("D:\\workspace\\folderion\\buckets\\centris"))) {
+        try (Bucket bucket = CentrisBucket.INSTANCE.open(tempDir.resolve("D:/workspace/folderion-data/buckets/centris"))) {
             Table table = new BucketQuery(bucket, List.of(
                     "id",
                     "features.year_built as year",
