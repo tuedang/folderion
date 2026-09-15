@@ -132,24 +132,12 @@ public final class Bucket implements AutoCloseable {
                 .toList();
     }
 
-    /** @deprecated use {@link #listVersions(String)} */
-    @Deprecated
-    public List<Integer> listHistoryVersions(String id) {
-        return listVersions(id);
-    }
-
     public Optional<JsonNode> readVersionRecord(String id, int version) {
         validateId(id);
         if (version < 1) {
             throw new FolderionException("Version must be >= 1: " + version);
         }
         return readLogicalJson(id, VersionNum.fromInt(version), schema.path("record"));
-    }
-
-    /** @deprecated use {@link #readVersionRecord(String, int)} */
-    @Deprecated
-    public Optional<JsonNode> readHistoryRecord(String id, int version) {
-        return readVersionRecord(id, version);
     }
 
     public Optional<String> readLogicalText(String id, String logicalPath) {
@@ -388,7 +376,8 @@ public final class Bucket implements AutoCloseable {
             if (integrity == null || integrity.isNull()) {
                 return Optional.empty();
             }
-            return Optional.of(Json.mapper().convertValue(integrity, RecordIntegrity.class));
+            RecordIntegrity value = Json.mapper().convertValue(integrity, RecordIntegrity.class);
+            return Optional.ofNullable(value);
         });
     }
 
