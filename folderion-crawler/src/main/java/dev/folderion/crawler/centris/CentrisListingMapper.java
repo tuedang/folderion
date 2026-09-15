@@ -157,9 +157,12 @@ public final class CentrisListingMapper {
                 schoolTax = amount;
                 section = Section.TAXES;
             } else if (key.contains("common expenses")
+                    || key.contains("condominium fees")
                     || key.contains("condo fees")
                     || key.contains("co-ownership fees")
                     || key.contains("frais de condo")
+                    || key.contains("frais de copropriété")
+                    || key.contains("frais de copropriete")
                     || key.contains("frais communs")) {
                 commonExpenses = amount;
                 section = Section.FEES;

@@ -90,7 +90,7 @@
     },
     {
       "name": "financial_rows",
-      "selector": ".financial-details-table__row",
+      "selector": ".financial-details-table:not(.financial-details-table--monthly) .financial-details-table__row",
       "type": "nested_list",
       "fields": [
         {

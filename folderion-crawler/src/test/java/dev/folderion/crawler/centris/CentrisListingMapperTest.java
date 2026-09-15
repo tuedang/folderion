@@ -92,4 +92,37 @@ class CentrisListingMapperTest {
         assertEquals(url, listing.sourceUrl());
         assertNotNull(listing.getDescription());
     }
+
+    @Test
+    void mapsCondominiumFeesYearlyLabel() throws Exception {
+        // Centris uses "Condominium fees" (not "condo fees"); monthly+yearly both appear in DOM.
+        String json = """
+                {
+                  "id": "25741571",
+                  "title": "Condominium house for sale",
+                  "address_raw": "651, Croissant de Namur, Saint-Lambert (Montérégie)",
+                  "price_amount": "699000",
+                  "financial_rows": [
+                    {"label": "Lot", "value": "$149,000"},
+                    {"label": "Building", "value": "$461,700"},
+                    {"label": "Total", "value": "$610,700"},
+                    {"label": "Municipal (2026)", "value": "$4,585"},
+                    {"label": "School (2026)", "value": "$439"},
+                    {"label": "Total", "value": "$5,024"},
+                    {"label": "Condominium fees", "value": "$6,348"},
+                    {"label": "Total", "value": "$6,348"},
+                    {"label": "Electricity", "value": "$2,290"},
+                    {"label": "Total", "value": "$2,290"}
+                  ]
+                }
+                """;
+        CentrisListing listing = listingMapper.map(
+                mapper.readTree(json),
+                "https://www.centris.ca/en/condominium-houses~for-sale~saint-lambert-monteregie/25741571");
+
+        assertEquals(6348, listing.getFinancial().getFeesYearly().getCommonExpenses());
+        assertEquals(6348, listing.getFinancial().getFeesYearly().getTotal());
+        assertEquals(6348, listing.getFinancial().getCondoFeesYearly());
+        assertEquals(2290, listing.getFinancial().getExpensesYearly().getElectricity());
+    }
 }

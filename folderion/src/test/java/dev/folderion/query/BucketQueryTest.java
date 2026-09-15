@@ -76,7 +76,7 @@ class BucketQueryTest {
                     "features.year_built as year",
                     "price.amount",
                     "financial.municipal_assessment_2026.total as price.city",
-                    "financial.fees_yearly.total as fees",
+                    "financial.condo_fees_yearly as condo_fees",
                     "features.bedrooms as bedrooms",
                     "features.bedrooms_note as bedrooms_note",
                     "features.bathrooms as bathrooms",
@@ -92,7 +92,7 @@ class BucketQueryTest {
             table = table.dropWhere(table.stringColumn("city").isIn("Beaconsfield", "Pointe-Claire", "Côte-Saint-Luc", "Dollard-des-Ormeaux",
                     "Boucherville", "Dorval"));
 
-            table = table.dropWhere(table.longColumn("fees").isGreaterThan(2100));
+            table = table.dropWhere(table.longColumn("condo_fees").isGreaterThan(2100));
             table = table.dropWhere(table.stringColumn("address").containsString("Z, "));
 
             table = table.sortDescendingOn("year", "city", "bedrooms");
