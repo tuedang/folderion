@@ -10,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -114,7 +115,12 @@ public final class Crawl4AiClient {
         }
     }
 
-    public record Result(String url, boolean success, String errorMessage, List<JsonNode> extracted) {
+    public record Result(
+            String url,
+            boolean success,
+            String errorMessage,
+            List<JsonNode> extracted,
+            String cacheStatus) {
 
         static Result parse(JsonNode item, ObjectMapper mapper) throws IOException {
             String url = textOrNull(item.get("url"));
@@ -124,7 +130,17 @@ public final class Crawl4AiClient {
                 error = textOrNull(item.get("error"));
             }
             List<JsonNode> extracted = parseExtracted(item.get("extracted_content"), mapper);
-            return new Result(url, success, error, extracted);
+            String cacheStatus = textOrNull(item.get("cache_status"));
+            return new Result(url, success, error, extracted, cacheStatus);
+        }
+
+        /** Crawl4AI values like {@code hit}, {@code hit_validated}, {@code hit_fallback}. */
+        public boolean fromCache() {
+            if (cacheStatus == null) {
+                return false;
+            }
+            String s = cacheStatus.toLowerCase(Locale.ROOT);
+            return s.startsWith("hit");
         }
 
         private static List<JsonNode> parseExtracted(JsonNode node, ObjectMapper mapper) throws IOException {

@@ -61,10 +61,15 @@ public final class CentrisCrawlJob {
             CentrisWriter writer = new CentrisWriter(bucket);
             for (CentrisSearchHit hit : hits) {
                 try {
-                    CentrisListing listing = listingCrawler.crawl(hit.url());
+                    CentrisListingCrawler.ListingFetch fetch = listingCrawler.fetch(hit.url());
+                    CentrisListing listing = fetch.listing();
                     CommitResult result = writer.write(listing, List.of());
                     commits.add(result);
-                    System.out.printf("OK  %s  %s  %s%n", listing.getId(), result.status(), hit.url());
+                    System.out.printf(
+                            "OK  %s  %s  %s%n",
+                            listing.getId(),
+                            formatCommitStatus(result.status(), fetch.cacheStatus()),
+                            hit.url());
                 } catch (RuntimeException e) {
                     failures.add(hit.id() + ": " + e.getMessage());
                     System.err.printf("FAIL %s  %s%n", hit.id(), e.getMessage());
@@ -80,6 +85,18 @@ public final class CentrisCrawlJob {
             return CentrisBucket.INSTANCE.open(bucketRoot);
         }
         return CentrisBucket.INSTANCE.init(bucketRoot);
+    }
+
+    /**
+     * Appends raw Crawl4AI {@code cache_status} when present:
+     * {@code UNCHANGED(hit)}, {@code UPDATED(miss)}, …
+     */
+    static String formatCommitStatus(CommitResult.Status status, String cacheStatus) {
+        Objects.requireNonNull(status, "status");
+        if (cacheStatus == null || cacheStatus.isBlank()) {
+            return status.name();
+        }
+        return status.name() + "(" + cacheStatus.trim() + ")";
     }
 
     public record Report(int discovered, int written, List<String> failures) {

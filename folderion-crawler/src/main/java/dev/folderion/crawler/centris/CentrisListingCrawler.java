@@ -43,10 +43,21 @@ public final class CentrisListingCrawler {
     }
 
     public CentrisListing crawl(String listingUrl) {
+        return fetch(listingUrl).listing();
+    }
+
+    /**
+     * Same as {@link #crawl(String)} but keeps Crawl4AI cache metadata for logging.
+     */
+    public ListingFetch fetch(String listingUrl) {
         Objects.requireNonNull(listingUrl, "listingUrl");
         JsonNode request = schemas.buildCrawlRequest(listingUrl, listingSchema, options);
         Crawl4AiClient.Result result = client.crawl(request).firstResult();
         JsonNode extracted = result.firstExtractedOrThrow();
-        return mapper.map(extracted, listingUrl);
+        CentrisListing listing = mapper.map(extracted, listingUrl);
+        return new ListingFetch(listing, result.cacheStatus(), result.fromCache());
+    }
+
+    public record ListingFetch(CentrisListing listing, String cacheStatus, boolean fromCache) {
     }
 }

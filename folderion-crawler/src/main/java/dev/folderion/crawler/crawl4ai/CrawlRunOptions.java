@@ -61,11 +61,10 @@ public final class CrawlRunOptions {
 
     public static final class Builder {
         private boolean stream = false;
-        /** Crawl4AI CacheMode — always prefer enabled to avoid re-crawling. */
         private String cacheMode = "enabled";
         private String waitFor = "css:div.region-content";
         private Integer waitForTimeoutMs;
-        private Double delayBeforeReturnHtml = 2.0;
+        private Double delayBeforeReturnHtml = 1.0;
         private String cssSelector;
 
         public Builder stream(boolean stream) {
